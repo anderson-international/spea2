@@ -1,12 +1,14 @@
 mod item;
 mod sack;
+mod spea2;
 
-use sack::SackPool;
 use std::time::Instant;
 
 fn main() {
     let start = Instant::now();
-    SackPool::new();
+
+    spea2::evolve();
+
     let duration = start.elapsed();
 
     println!("duration: {:?}", duration);

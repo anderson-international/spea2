@@ -2,7 +2,7 @@ use rand::Rng;
 
 static MAX_WEIGHT: i32 = 10;
 static MAX_VALUE: i32 = 10;
-static POOL_SIZE: i32 = 10;
+static POOL_SIZE: i32 = 100;
 
 #[derive(Debug, Clone, Copy)]
 pub struct Item {
