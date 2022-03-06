@@ -1,7 +1,9 @@
+use std::ops::Deref;
+
 use crate::item::{Item, ItemPool};
 use rand::Rng;
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct Sack {
     pub weight: i32,
     pub value: i32,
@@ -20,6 +22,7 @@ impl Sack {
         self.weight += item.weight;
         self.value += item.value;
     }
+
     pub fn update(&mut self) {
         self.weight = 0;
         self.value = 0;
