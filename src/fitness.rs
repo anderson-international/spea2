@@ -2,16 +2,13 @@ use quickersort::sort_floats;
 
 use crate::sack::Sack;
 
-pub fn evolve(population: Vec<Sack>) {
-    let archive = vec![];
-    let mut union = population.clone();
-    union.append(&mut archive.clone());
+pub fn get(union: Vec<Sack>) -> Vec<f32> {
     let len = union.len();
-
     let (strengths, dominators) = get_strengths_and_dominators(len, &union);
     let raw_fitness = get_raw_fitness(len, &dominators, &strengths);
     let distances = get_distances(len, union);
     let fitness = get_fitness(len, distances, &raw_fitness);
+    fitness
 }
 
 fn get_fitness(len: usize, mut distances: Vec<Vec<f32>>, raw_fitness: &Vec<f32>) -> Vec<f32> {

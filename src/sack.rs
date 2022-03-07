@@ -1,5 +1,3 @@
-use std::ops::Deref;
-
 use crate::item::{Item, ItemPool};
 use rand::Rng;
 

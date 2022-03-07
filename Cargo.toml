@@ -8,4 +8,13 @@ edition = "2021"
 [dependencies]
 rand = "0.8.5"
 quickersort = "3.0.1"
+criterion = "0.3"
+
+[[bench]]
+name = "bench_evolve"
+harness = false
+
+[lib]
+name="spea2"
+path = "src/lib.rs"
 
