@@ -1,46 +1,80 @@
 use quickersort::sort_floats;
 
-use crate::sack::Sack;
+pub fn get(union: &Vec<Vec<f32>>) -> (Vec<f32>, Vec<usize>) {
+    let decision_variable_count = union.len();
+    let population_count = union[0].len() - 1;
+    let (strengths, dominators, distances) =
+        get_strengths_and_dominators(decision_variable_count, population_count, &union);
+    let raw_fitness = get_raw_fitness(population_count, &dominators, &strengths);
 
-pub fn get(union: Vec<Sack>) -> Vec<f32> {
-    let len = union.len();
-    let (strengths, dominators) = get_strengths_and_dominators(len, &union);
-    let raw_fitness = get_raw_fitness(len, &dominators, &strengths);
-    let distances = get_distances(len, union);
-    let fitness = get_fitness(len, distances, &raw_fitness);
-    fitness
+    get_fitness_and_non_dominated(population_count, distances, &raw_fitness)
 }
 
-fn get_fitness(len: usize, mut distances: Vec<Vec<f32>>, raw_fitness: &Vec<f32>) -> Vec<f32> {
-    let kth = (len as f32).sqrt() as usize;
-    let mut fitness = vec![];
-    for i in 0..len {
-        sort_floats(&mut distances[i][..]);
-        let f = raw_fitness[i] + (1.0 / distances[i][kth]);
-        fitness.push(f)
-    }
-    fitness
-}
+fn get_strengths_and_dominators(
+    decision_variable_count: usize,
+    population_count: usize,
+    union: &Vec<Vec<f32>>,
+) -> (Vec<f32>, Vec<Vec<usize>>, Vec<Vec<f32>>) {
+    let mut strengths = vec![0.0; population_count];
+    let mut dominators: Vec<Vec<usize>> = vec![vec![]; population_count];
+    let mut distances: Vec<Vec<f32>> = vec![vec![]; population_count];
+    let mut i_dom_j;
+    let mut j_dom_i;
 
-fn get_distances(len: usize, union: Vec<Sack>) -> Vec<Vec<f32>> {
-    let mut distances: Vec<Vec<f32>> = vec![vec![]; len];
-    for i in 0..len {
-        for j in 0..len {
-            if j == i {
-                continue;
-            };
-            let d = ((i32::pow(union[i].weight - union[j].weight, 2)
-                + i32::pow(union[i].value - union[j].value, 2)) as f32)
-                .sqrt();
-            distances[i].push(d);
+    for i in 1..=population_count {
+        for j in i + 1..=population_count {
+            i_dom_j = false;
+            j_dom_i = false;
+
+            for k in 0..decision_variable_count {
+                let (u1, u2) = if union[k][0] > 0.0 {
+                    (union[k][j], union[k][i])
+                } else {
+                    (union[k][i], union[k][j])
+                };
+                if u1 < u2 {
+                    i_dom_j = true;
+                    if j_dom_i {
+                        break;
+                    }
+                } else if u2 < u1 {
+                    j_dom_i = true;
+                    if i_dom_j {
+                        break;
+                    }
+                } else {
+                    i_dom_j = false;
+                    j_dom_i = false;
+                    break;
+                }
+            }
+            if i_dom_j && !j_dom_i {
+                strengths[i - 1] += 1.0;
+                dominators[j - 1].push(i - 1);
+            } else if j_dom_i && !i_dom_j {
+                strengths[j - 1] += 1.0;
+                dominators[i - 1].push(j - 1);
+            }
+
+            let mut distance: f32 = 0.0;
+            for k in 0..decision_variable_count {
+                distance += (union[k][i] - union[k][j]).powi(2);
+            }
+            distance = distance.sqrt();
+            distances[i - 1].push(distance);
+            distances[j - 1].push(distance);
         }
     }
-    distances
+    (strengths, dominators, distances)
 }
 
-fn get_raw_fitness(len: usize, dominators: &Vec<Vec<usize>>, strengths: &Vec<f32>) -> Vec<f32> {
-    let mut raw_fitness = vec![0.0; len];
-    for i in 0..len {
+fn get_raw_fitness(
+    population_count: usize,
+    dominators: &Vec<Vec<usize>>,
+    strengths: &Vec<f32>,
+) -> Vec<f32> {
+    let mut raw_fitness = vec![0.0; population_count];
+    for i in 0..population_count {
         for j in 0..dominators[i].len() {
             raw_fitness[i] += strengths[dominators[i][j]];
         }
@@ -48,47 +82,34 @@ fn get_raw_fitness(len: usize, dominators: &Vec<Vec<usize>>, strengths: &Vec<f32
     raw_fitness
 }
 
-fn get_strengths_and_dominators(len: usize, union: &Vec<Sack>) -> (Vec<f32>, Vec<Vec<usize>>) {
-    let mut strengths = vec![0.0; len];
-    let mut dominators: Vec<Vec<usize>> = vec![vec![]; len];
-
-    for i in 0..len {
-        for j in i + 1..len {
-            if union[i].weight < union[j].weight && union[i].value > union[j].value {
-                strengths[i] += 1.0;
-                dominators[j].push(i);
-            } else if union[j].weight < union[i].weight && union[j].value > union[i].value {
-                strengths[j] += 1.0;
-                dominators[i].push(j);
-            }
+fn get_fitness_and_non_dominated(
+    population_count: usize,
+    mut distances: Vec<Vec<f32>>,
+    raw_fitness: &Vec<f32>,
+) -> (Vec<f32>, Vec<usize>) {
+    let kth = (population_count as f32).sqrt() as usize;
+    let mut fitness = vec![];
+    let mut non_dominated = vec![];
+    for i in 0..population_count {
+        sort_floats(&mut distances[i][..]);
+        let f = raw_fitness[i] + (1.0 / distances[i][kth]);
+        fitness.push(f);
+        if f < 1.0 {
+            non_dominated.push(i);
         }
     }
-    (strengths, dominators)
+    (fitness, non_dominated)
 }
 
 #[cfg(test)]
-mod test {
+pub mod test {
     use super::*;
-    use crate::sack::Sack;
-
-    fn mock_sack(weight: i32, value: i32) -> Sack {
-        Sack {
-            weight,
-            value,
-            items: vec![],
-        }
-    }
 
     #[test]
-    pub fn test_get_strengths_and_dominators() {
-        let population = vec![
-            mock_sack(2, 4),
-            mock_sack(3, 3),
-            mock_sack(3, 2),
-            mock_sack(1, 5),
-        ];
-
-        let (strengths, dominators) = get_strengths_and_dominators(4, &population);
+    pub fn test_strengths_and_dominators() {
+        let population: Vec<Vec<f32>> =
+            vec![vec![0.0, 2.0, 3.0, 3.0, 1.0], vec![1.0, 4.0, 3.0, 2.0, 5.0]];
+        let (strengths, dominators, _) = get_strengths_and_dominators(2, 4, &population);
 
         assert_eq!(strengths, [2.0, 0.0, 0.0, 3.0]);
 
@@ -96,6 +117,17 @@ mod test {
         assert_eq!(dominators[1], [0, 3]);
         assert_eq!(dominators[2], [0, 3]);
         assert_eq!(dominators[3], []);
+    }
+
+    #[test]
+    pub fn test_distances() {
+        let population: Vec<Vec<f32>> = vec![
+            vec![0.0, 0.0, 3.0, 5.0, 7.0],
+            vec![1.0, 0.0, 4.0, 12.0, 24.0],
+        ];
+        let (_, _, distances) = get_strengths_and_dominators(2, 4, &population);
+
+        assert_eq!(distances[0], [5.0, 13.0, 25.0]);
     }
 
     #[test]
@@ -111,34 +143,24 @@ mod test {
     }
 
     #[test]
-    fn test_get_distances() {
-        let population = vec![
-            mock_sack(0, 0),
-            mock_sack(3, 4),
-            mock_sack(5, 12),
-            mock_sack(7, 24),
-        ];
-
-        let distances = get_distances(4, population);
-        assert_eq!(distances[0], [5.0, 13.0, 25.0]);
-    }
-
-    #[test]
-    fn test_get_fitness() {
-        let raw_fitness = vec![1.0, 2.0, 3.0, 4.0];
+    fn test_get_fitness_and_non_dominated() {
+        let raw_fitness = vec![0.1, 2.0, 0.5, 4.0];
         let distances = vec![
             vec![1.0, 2.0, 4.0],
             vec![5.0, 6.0, 10.0],
             vec![9.0, 10.0, 100.0],
             vec![10.0, 9.0, 5.0],
         ];
-        //raw_fitness[i] + (1.0 / distances[i][kth]);
 
-        let fitness = get_fitness(4, distances, &raw_fitness);
-        println!("{:?}", fitness);
-        assert_eq!(fitness[0], 1.25);
+        let (fitness, non_dominated) = get_fitness_and_non_dominated(4, distances, &raw_fitness);
+
+        assert_eq!(fitness[0], 0.35);
         assert_eq!(fitness[1], 2.1);
-        assert_eq!(fitness[2], 3.01);
+        assert_eq!(fitness[2], 0.51);
         assert_eq!(fitness[3], 4.1);
+
+        assert_eq!(non_dominated.len(), 2);
+        assert_eq!(non_dominated[0], 0);
+        assert_eq!(non_dominated[1], 2);
     }
 }

@@ -9,12 +9,20 @@ edition = "2021"
 rand = "0.8.5"
 quickersort = "3.0.1"
 criterion = "0.3"
+ndarray = "0.13.0"
+
+[[bin]]
+name="spea2"
+path="src/bin/main.rs"
+
+[lib]
+name="spea2"
+path = "src/spea2.rs"
+doctest = false
 
 [[bench]]
 name = "bench_evolve"
 harness = false
 
-[lib]
-name="spea2"
-path = "src/lib.rs"
+
 
