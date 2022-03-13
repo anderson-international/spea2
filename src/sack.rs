@@ -2,7 +2,7 @@ use rand::Rng;
 
 use crate::{
     item::{Item, ItemPool},
-    Model,
+    DecisionValues, Direction, Model, ModelValues,
 };
 
 #[derive(Debug, Clone)]
@@ -73,15 +73,19 @@ impl SackPool {
 }
 
 impl Model for SackPool {
-    fn get_decision_vectors(self) -> Vec<Vec<f32>> {
-        let len = self.sacks.len();
-        let mut decision_variables: Vec<Vec<f32>> = vec![vec![]; 2];
-        decision_variables[0].push(0.0);
-        decision_variables[1].push(1.0);
-        for i in 0..len {
-            decision_variables[0].push(self.sacks[i].weight);
-            decision_variables[1].push(self.sacks[i].value);
+    fn get_values(self) -> ModelValues {
+        let weights = DecisionValues::new(
+            Direction::Minimised,
+            self.sacks.iter().map(|s| s.weight).collect(),
+        );
+        let values = DecisionValues::new(
+            Direction::Maximised,
+            self.sacks.iter().map(|s| s.value).collect(),
+        );
+        ModelValues {
+            count: self.sacks.len(),
+            decision_count: 2,
+            decisions: vec![weights, values],
         }
-        decision_variables
     }
 }

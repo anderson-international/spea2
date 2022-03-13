@@ -1,43 +1,44 @@
 use quickersort::sort_floats;
 
-pub fn get(union: &Vec<Vec<f32>>) -> (Vec<f32>, Vec<usize>) {
-    let decision_variable_count = union.len();
-    let population_count = union[0].len() - 1;
-    let (strengths, dominators, distances) =
-        get_strengths_and_dominators(decision_variable_count, population_count, &union);
-    let raw_fitness = get_raw_fitness(population_count, &dominators, &strengths);
+use crate::{Direction, ModelValues, OrderedValue};
 
-    get_fitness_and_non_dominated(population_count, distances, &raw_fitness)
+pub fn get(model_values: &ModelValues) -> (Vec<OrderedValue>, Vec<usize>, Vec<Vec<f32>>) {
+    let (strengths, dominators, distances) = get_strengths_dominators_distances(model_values);
+    let raw_fitness = get_raw_fitness(model_values.count, &dominators, &strengths);
+
+    let (fitness, non_dominated, distances) =
+        get_fitness_and_non_dominated(model_values.count, distances, &raw_fitness);
+
+    (fitness, non_dominated, distances)
 }
 
-fn get_strengths_and_dominators(
-    decision_variable_count: usize,
-    population_count: usize,
-    union: &Vec<Vec<f32>>,
+fn get_strengths_dominators_distances(
+    mv: &ModelValues,
 ) -> (Vec<f32>, Vec<Vec<usize>>, Vec<Vec<f32>>) {
-    let mut strengths = vec![0.0; population_count];
-    let mut dominators: Vec<Vec<usize>> = vec![vec![]; population_count];
-    let mut distances: Vec<Vec<f32>> = vec![vec![]; population_count];
+    let d_count = mv.decision_count;
+    let p_count = mv.count;
+    let mut strengths = vec![0.0; p_count];
+    let mut dominators: Vec<Vec<usize>> = vec![vec![]; p_count];
+    let mut distances: Vec<Vec<f32>> = vec![vec![]; p_count];
     let mut i_dom_j;
     let mut j_dom_i;
 
-    for i in 1..=population_count {
-        for j in i + 1..=population_count {
+    for i in 0..mv.count {
+        for j in i + 1..p_count {
             i_dom_j = false;
             j_dom_i = false;
 
-            for k in 0..decision_variable_count {
-                let (u1, u2) = if union[k][0] > 0.0 {
-                    (union[k][j], union[k][i])
-                } else {
-                    (union[k][i], union[k][j])
+            for k in 0..mv.decision_count {
+                let (dv1, dv2) = match mv.decisions[k].direction {
+                    Direction::Maximised => (mv.decisions[k].values[j], mv.decisions[k].values[i]),
+                    Direction::Minimised => (mv.decisions[k].values[i], mv.decisions[k].values[j]),
                 };
-                if u1 < u2 {
+                if dv1 < dv2 {
                     i_dom_j = true;
                     if j_dom_i {
                         break;
                     }
-                } else if u2 < u1 {
+                } else if dv2 < dv1 {
                     j_dom_i = true;
                     if i_dom_j {
                         break;
@@ -49,20 +50,20 @@ fn get_strengths_and_dominators(
                 }
             }
             if i_dom_j && !j_dom_i {
-                strengths[i - 1] += 1.0;
-                dominators[j - 1].push(i - 1);
+                strengths[i] += 1.0;
+                dominators[j].push(i);
             } else if j_dom_i && !i_dom_j {
-                strengths[j - 1] += 1.0;
-                dominators[i - 1].push(j - 1);
+                strengths[j] += 1.0;
+                dominators[i].push(j);
             }
 
             let mut distance: f32 = 0.0;
-            for k in 0..decision_variable_count {
-                distance += (union[k][i] - union[k][j]).powi(2);
+            for k in 0..d_count {
+                distance += (mv.decisions[k].values[i] - mv.decisions[k].values[j]).powi(2);
             }
             distance = distance.sqrt();
-            distances[i - 1].push(distance);
-            distances[j - 1].push(distance);
+            distances[i].push(distance);
+            distances[j].push(distance);
         }
     }
     (strengths, dominators, distances)
@@ -86,30 +87,39 @@ fn get_fitness_and_non_dominated(
     population_count: usize,
     mut distances: Vec<Vec<f32>>,
     raw_fitness: &Vec<f32>,
-) -> (Vec<f32>, Vec<usize>) {
+) -> (Vec<OrderedValue>, Vec<usize>, Vec<Vec<f32>>) {
     let kth = (population_count as f32).sqrt() as usize;
-    let mut fitness = vec![];
+    let mut fitness: Vec<OrderedValue> = vec![];
     let mut non_dominated = vec![];
     for i in 0..population_count {
         sort_floats(&mut distances[i][..]);
         let f = raw_fitness[i] + (1.0 / distances[i][kth]);
-        fitness.push(f);
+        fitness.push(OrderedValue { index: i, value: f });
         if f < 1.0 {
             non_dominated.push(i);
         }
     }
-    (fitness, non_dominated)
+    (fitness, non_dominated, distances)
 }
 
 #[cfg(test)]
 pub mod test {
+    use crate::{DecisionValues, Direction};
+
     use super::*;
 
     #[test]
     pub fn test_strengths_and_dominators() {
-        let population: Vec<Vec<f32>> =
-            vec![vec![0.0, 2.0, 3.0, 3.0, 1.0], vec![1.0, 4.0, 3.0, 2.0, 5.0]];
-        let (strengths, dominators, _) = get_strengths_and_dominators(2, 4, &population);
+        let model_values = ModelValues {
+            decision_count: 2,
+            count: 4,
+            decisions: vec![
+                DecisionValues::new(Direction::Minimised, vec![2.0, 3.0, 3.0, 1.0]),
+                DecisionValues::new(Direction::Maximised, vec![4.0, 3.0, 2.0, 5.0]),
+            ],
+        };
+
+        let (strengths, dominators, _) = get_strengths_dominators_distances(&model_values);
 
         assert_eq!(strengths, [2.0, 0.0, 0.0, 3.0]);
 
@@ -121,11 +131,16 @@ pub mod test {
 
     #[test]
     pub fn test_distances() {
-        let population: Vec<Vec<f32>> = vec![
-            vec![0.0, 0.0, 3.0, 5.0, 7.0],
-            vec![1.0, 0.0, 4.0, 12.0, 24.0],
-        ];
-        let (_, _, distances) = get_strengths_and_dominators(2, 4, &population);
+        let model_values = ModelValues {
+            decision_count: 2,
+            count: 4,
+            decisions: vec![
+                DecisionValues::new(Direction::Minimised, vec![0.0, 3.0, 5.0, 7.0]),
+                DecisionValues::new(Direction::Maximised, vec![0.0, 4.0, 12.0, 24.0]),
+            ],
+        };
+
+        let (_, _, distances) = get_strengths_dominators_distances(&model_values);
 
         assert_eq!(distances[0], [5.0, 13.0, 25.0]);
     }
@@ -152,12 +167,13 @@ pub mod test {
             vec![10.0, 9.0, 5.0],
         ];
 
-        let (fitness, non_dominated) = get_fitness_and_non_dominated(4, distances, &raw_fitness);
+        let (fitness, non_dominated, _) = get_fitness_and_non_dominated(4, distances, &raw_fitness);
 
-        assert_eq!(fitness[0], 0.35);
-        assert_eq!(fitness[1], 2.1);
-        assert_eq!(fitness[2], 0.51);
-        assert_eq!(fitness[3], 4.1);
+        println!("{:?}", fitness);
+        assert_eq!(fitness[0].value, 0.35);
+        assert_eq!(fitness[1].value, 2.1);
+        assert_eq!(fitness[2].value, 0.51);
+        assert_eq!(fitness[3].value, 4.1);
 
         assert_eq!(non_dominated.len(), 2);
         assert_eq!(non_dominated[0], 0);

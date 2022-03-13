@@ -9,7 +9,7 @@ edition = "2021"
 rand = "0.8.5"
 quickersort = "3.0.1"
 criterion = "0.3"
-ndarray = "0.13.0"
+lazy_static = "1.4.0"
 
 [[bin]]
 name="spea2"
