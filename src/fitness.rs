@@ -2,36 +2,36 @@ use quickersort::sort_floats;
 
 use crate::{Direction, ModelValues, OrderedValue};
 
-pub fn get(model_values: &ModelValues) -> (Vec<OrderedValue>, Vec<usize>, Vec<Vec<f32>>) {
-    let (strengths, dominators, distances) = get_strengths_dominators_distances(model_values);
-    let raw_fitness = get_raw_fitness(model_values.count, &dominators, &strengths);
+pub fn get(population: &ModelValues) -> (Vec<OrderedValue>, Vec<usize>, Vec<Vec<f32>>) {
+    let (strengths, dominators, distances) = get_strengths_dominators_distances(population);
+    let raw_fitness = get_raw_fitness(population.count, &dominators, &strengths);
 
     let (fitness, non_dominated, distances) =
-        get_fitness_and_non_dominated(model_values.count, distances, &raw_fitness);
+        get_fitness_and_non_dominated(population.count, distances, &raw_fitness);
 
     (fitness, non_dominated, distances)
 }
 
 fn get_strengths_dominators_distances(
-    mv: &ModelValues,
+    population: &ModelValues,
 ) -> (Vec<f32>, Vec<Vec<usize>>, Vec<Vec<f32>>) {
-    let d_count = mv.decision_count;
-    let p_count = mv.count;
+    let d_count = population.decision_count;
+    let p_count = population.count;
     let mut strengths = vec![0.0; p_count];
     let mut dominators: Vec<Vec<usize>> = vec![vec![]; p_count];
     let mut distances: Vec<Vec<f32>> = vec![vec![]; p_count];
     let mut i_dom_j;
     let mut j_dom_i;
 
-    for i in 0..mv.count {
+    for i in 0..population.count {
         for j in i + 1..p_count {
             i_dom_j = false;
             j_dom_i = false;
 
-            for k in 0..mv.decision_count {
-                let (dv1, dv2) = match mv.decisions[k].direction {
-                    Direction::Maximised => (mv.decisions[k].values[j], mv.decisions[k].values[i]),
-                    Direction::Minimised => (mv.decisions[k].values[i], mv.decisions[k].values[j]),
+            for k in 0..population.decision_count {
+                let (dv1, dv2) = match population.decisions[k].direction {
+                    Direction::Maximised => (population.decisions[k].values[j], population.decisions[k].values[i]),
+                    Direction::Minimised => (population.decisions[k].values[i], population.decisions[k].values[j]),
                 };
                 if dv1 < dv2 {
                     i_dom_j = true;
@@ -59,7 +59,7 @@ fn get_strengths_dominators_distances(
 
             let mut distance: f32 = 0.0;
             for k in 0..d_count {
-                distance += (mv.decisions[k].values[i] - mv.decisions[k].values[j]).powi(2);
+                distance += (population.decisions[k].values[i] - population.decisions[k].values[j]).powi(2);
             }
             distance = distance.sqrt();
             distances[i].push(distance);
@@ -92,7 +92,7 @@ fn get_fitness_and_non_dominated(
     let mut fitness: Vec<OrderedValue> = vec![];
     let mut non_dominated = vec![];
     for i in 0..population_count {
-        sort_floats(&mut distances[i][..]);
+        sort_floats(&mut distances[i]);
         let f = raw_fitness[i] + (1.0 / distances[i][kth]);
         fitness.push(OrderedValue { index: i, value: f });
         if f < 1.0 {
@@ -110,7 +110,7 @@ pub mod test {
 
     #[test]
     pub fn test_strengths_and_dominators() {
-        let model_values = ModelValues {
+        let population = ModelValues {
             decision_count: 2,
             count: 4,
             decisions: vec![
@@ -119,7 +119,7 @@ pub mod test {
             ],
         };
 
-        let (strengths, dominators, _) = get_strengths_dominators_distances(&model_values);
+        let (strengths, dominators, _) = get_strengths_dominators_distances(&population);
 
         assert_eq!(strengths, [2.0, 0.0, 0.0, 3.0]);
 
@@ -131,7 +131,7 @@ pub mod test {
 
     #[test]
     pub fn test_distances() {
-        let model_values = ModelValues {
+        let population = ModelValues {
             decision_count: 2,
             count: 4,
             decisions: vec![
@@ -140,7 +140,7 @@ pub mod test {
             ],
         };
 
-        let (_, _, distances) = get_strengths_dominators_distances(&model_values);
+        let (_, _, distances) = get_strengths_dominators_distances(&population);
 
         assert_eq!(distances[0], [5.0, 13.0, 25.0]);
     }

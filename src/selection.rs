@@ -16,7 +16,36 @@ pub(crate) fn environmental_selection(
 }
 
 fn truncate_archive_by_distance(archive: &mut ModelValues, distances: Vec<Vec<f32>>) {
-    todo!()
+    // let mut remove = vec![];
+    // let mut m: (usize, &Vec<f32>) = (0, &vec![]);
+    // // while count > *ARCHIVE_SIZE {
+    // while remove.len() < 3 {
+    //     let (index, min) = distances
+    //         .iter()
+    //         .enumerate()
+    //         .skip(remove.len())
+    //         .reduce(|(i, accum), (j, item)| {
+    //             for (av, iv) in accum.iter().zip(item) {
+    //                 if av < iv {
+    //                     m = (i, accum);
+    //                     break;
+    //                 } else if av > iv {
+    //                     m = (j, item);
+    //                     break;
+    //                 } else {
+    //                     continue;
+    //                 };
+    //             }
+    //             m
+    //         })
+    //         .unwrap();
+    //     println!("{:?}", min);
+    //     remove.push(index);
+    //     println!("{:?}", remove);
+    // }
+
+
+    
 }
 
 fn top_up_archive_with_dominated(
@@ -102,6 +131,15 @@ mod tests {
         ];
         fitness
     }
+    fn get_mock_distances() -> Vec<Vec<f32>> {
+        let distances = vec![
+            vec![4.0, 5.0, 6.0],
+            vec![7.0, 8.0, 9.0],
+            vec![10.0, 11.0, 12.0],
+            vec![1.0, 2.0, 3.0],
+        ];
+        distances
+    }
     #[test]
     pub fn test_add_non_dominated_to_archive() {
         let union = get_mock_union();
@@ -134,5 +172,12 @@ mod tests {
         assert_eq!(archive.decisions[1].values[4], 8.0);
         assert_eq!(archive.decisions[0].values[5], 3.0);
         assert_eq!(archive.decisions[1].values[5], 6.0);
+    }
+
+    #[test]
+    fn test_truncate_archive_by_distance() {
+        let mut archive = get_mock_archive();
+        let distances = get_mock_distances();
+        truncate_archive_by_distance(&mut archive, distances);
     }
 }
