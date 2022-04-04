@@ -1,9 +1,8 @@
-use quickersort::sort_floats;
 pub trait Spea2Model {
     fn get_model(self) -> Model;
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct Model {
     pub objectives: Vec<Objective>,
     pub population: Vec<ModelItem>,
