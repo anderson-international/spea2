@@ -39,6 +39,54 @@ pub fn get_model() -> Model {
     model
 }
 
+pub fn get_model_with_fitness() -> Model {
+    let mut model = get_model();
+    model.population[0].fitness = 0.1;
+    model.population[1].fitness = 1.5;
+    model.archive[0].fitness = 0.9;
+    model
+}
+
+pub fn get_dominated() -> Vec<ModelItem> {
+    let mut dominated: Vec<ModelItem> = vec![];
+
+    dominated.push(ModelItem {
+        values: vec![0.0, 0.0],
+        fitness: 0.1,
+    });
+    dominated.push(ModelItem {
+        values: vec![4.0, 0.0],
+        fitness: 0.2,
+    });
+    dominated.push(ModelItem {
+        values: vec![0.0, 3.0],
+        fitness: 0.3,
+    });
+    dominated
+}
+
+pub fn get_non_dominated() -> Vec<ModelItem> {
+    let mut non_dominated: Vec<ModelItem> = vec![];
+
+    non_dominated.push(ModelItem {
+        values: vec![5.0, 0.0],
+        fitness: 1.0,
+    });
+    non_dominated.push(ModelItem {
+        values: vec![0.0, 12.0],
+        fitness: 1.1,
+    });
+    non_dominated.push(ModelItem {
+        values: vec![7.0, 0.0],
+        fitness: 1.2,
+    });
+    non_dominated.push(ModelItem {
+        values: vec![0.0, 24.0],
+        fitness: 1.3,
+    });
+
+    non_dominated
+}
 #[derive(Debug)]
 pub struct BenchModel {
     pub model: Model,

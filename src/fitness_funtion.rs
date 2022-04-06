@@ -70,7 +70,8 @@ pub fn set_fitness(model: &mut Model) -> (Vec<Vec<f32>>, Vec<Vec<usize>>, Vec<f3
         }
         let mut sorted = distances[i].clone();
         sort_floats(&mut sorted);
-        union[i].fitness = raw_fitness + (1.0 / sorted[kth]);
+        let density_estimate = 1.0 / sorted[kth];
+        union[i].fitness = raw_fitness + density_estimate;
     }
     (distances, dominators, strengths)
 }
