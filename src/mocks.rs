@@ -1,5 +1,5 @@
 use crate::constants;
-use crate::model::{Direction, Model, ModelItem, Objective, Spea2Model};
+use crate::model::{Direction, Distance, Model, ModelItem, Objective, Spea2Model};
 
 fn model_init(population_count: usize, archive_count: usize) -> Model {
     let mut model = Model {
@@ -87,6 +87,82 @@ pub fn get_non_dominated() -> Vec<ModelItem> {
 
     non_dominated
 }
+
+pub fn get_sorted_distances() -> Vec<Distance> {
+    let mut distances: Vec<Distance> = vec![];
+
+    distances.push(Distance {
+        from: 0,
+        to: 1,
+        value: 1.0,
+    });
+
+    distances.push(Distance {
+        from: 0,
+        to: 2,
+        value: 1.0,
+    });
+    distances.push(Distance {
+        from: 0,
+        to: 3,
+        value: 3.0,
+    });
+    distances.push(Distance {
+        from: 1,
+        to: 2,
+        value: 4.0,
+    });
+    distances.push(Distance {
+        from: 1,
+        to: 3,
+        value: 5.0,
+    });
+    distances.push(Distance {
+        from: 3,
+        to: 2,
+        value: 6.0,
+    });
+
+    distances
+}
+
+pub fn get_distances_with_tie() -> Vec<Distance> {
+    let mut distances: Vec<Distance> = vec![];
+
+    distances.push(Distance {
+        from: 0,
+        to: 1,
+        value: 1.0,
+    });
+
+    distances.push(Distance {
+        from: 0,
+        to: 2,
+        value: 2.0,
+    });
+    distances.push(Distance {
+        from: 0,
+        to: 3,
+        value: 4.0,
+    });
+    distances.push(Distance {
+        from: 1,
+        to: 2,
+        value: 3.0,
+    });
+    distances.push(Distance {
+        from: 1,
+        to: 3,
+        value: 1.0,
+    });
+    distances.push(Distance {
+        from: 3,
+        to: 2,
+        value: 5.0,
+    });
+    distances
+}
+
 #[derive(Debug)]
 pub struct BenchModel {
     pub model: Model,

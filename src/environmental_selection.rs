@@ -62,11 +62,47 @@ fn ensure_archive_size(
     } else if nd_len > archive_max {
         while non_dominated.len() > archive_max {
             let mut distances = get_orderable_distances(&non_dominated);
-            distances.sort_by(|a, b| b.value.partial_cmp(&a.value).unwrap());
-            let distance = distances.pop().unwrap();
-            non_dominated.remove(distance.from);
+            distances.sort_by(|a, b| a.value.partial_cmp(&b.value).unwrap());
+            let closest = get_closest(&distances);
+            non_dominated.remove(closest.from);
         }
     }
+}
+
+fn get_closest(distances: &[Distance]) -> &Distance {
+    if (distances[0].value == distances[1].value) && (distances[0].from != distances[1].from) {
+        match distance_tiebreak(distances, 0, 1) {
+            Some(d) => d,
+            None => &distances[0],
+        }
+    } else {
+        &distances[0]
+    }
+}
+
+fn distance_tiebreak(distances: &[Distance], i: usize, j: usize) -> Option<&Distance> {
+    let d1: Vec<&Distance> = distances
+        .iter()
+        .filter(|d| d.from == i || d.to == i)
+        .collect();
+    let d2: Vec<&Distance> = distances
+        .iter()
+        .filter(|d| d.from == j || d.to == j)
+        .collect();
+
+    println!("{:?}", d1);
+    println!("{:?}", d2);
+    // d1.sort_by(|a, b| a.value.partial_cmp(&b.value).unwrap());
+    // d2.sort_by(|a, b| a.value.partial_cmp(&b.value).unwrap());
+
+    for i in 1..d1.len() {
+        if d1[i].value < d2[i].value {
+            return Some(d1[i]);
+        } else if d2[i].value < d1[i].value {
+            return Some(d2[i]);
+        }
+    }
+    None
 }
 
 #[cfg(test)]
@@ -128,6 +164,22 @@ mod tests {
         let mut non_dominated = mocks::get_non_dominated();
         ensure_archive_size(dominated, &mut non_dominated, archive_max);
         assert_eq!(non_dominated.len(), archive_max);
-        println!("{:?}", non_dominated);
+    }
+
+    #[test]
+    fn test_get_closest() {
+        let distances = mocks::get_sorted_distances();
+        let closest = get_closest(&distances);
+        assert_eq!(closest, &distances[0]);
+    }
+
+    #[test]
+    fn test_get_closest_with_tiebreak() {
+        let mut distances = mocks::get_distances_with_tie();
+        distances.sort_by(|a, b| a.value.partial_cmp(&b.value).unwrap());
+        println!("{:?}", distances);
+        let closest = get_closest(&distances);
+        assert_eq!(closest.from, 1);
+        assert_eq!(closest.to, 3);
     }
 }
