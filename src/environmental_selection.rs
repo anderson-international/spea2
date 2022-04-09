@@ -24,6 +24,26 @@ fn drain_model_by_dominance(model: &mut Model) -> (Vec<ModelItem>, Vec<ModelItem
     (dominated, non_dominated)
 }
 
+fn ensure_archive_size(
+    mut dominated: Vec<ModelItem>,
+    non_dominated: &mut Vec<ModelItem>,
+    archive_max: usize,
+) {
+    let nd_len = non_dominated.len();
+    if nd_len < archive_max {
+        dominated.sort_by(|a, b| a.fitness.partial_cmp(&b.fitness).unwrap());
+        dominated.truncate(archive_max - nd_len);
+        non_dominated.extend(dominated);
+    } else if nd_len > archive_max {
+        while non_dominated.len() > archive_max {
+            let mut distances = get_orderable_distances(&non_dominated);
+            distances.sort_by(|a, b| a.value.partial_cmp(&b.value).unwrap());
+            let closest = get_closest(&distances);
+            non_dominated.remove(closest.from);
+        }
+    }
+}
+
 fn get_orderable_distances(dominated: &Vec<ModelItem>) -> Vec<Distance> {
     let d_len = dominated.len();
     let mut distances: Vec<Distance> = vec![];
@@ -49,26 +69,6 @@ fn get_orderable_distances(dominated: &Vec<ModelItem>) -> Vec<Distance> {
     distances
 }
 
-fn ensure_archive_size(
-    mut dominated: Vec<ModelItem>,
-    non_dominated: &mut Vec<ModelItem>,
-    archive_max: usize,
-) {
-    let nd_len = non_dominated.len();
-    if nd_len < archive_max {
-        dominated.sort_by(|a, b| a.fitness.partial_cmp(&b.fitness).unwrap());
-        dominated.truncate(archive_max - nd_len);
-        non_dominated.extend(dominated);
-    } else if nd_len > archive_max {
-        while non_dominated.len() > archive_max {
-            let mut distances = get_orderable_distances(&non_dominated);
-            distances.sort_by(|a, b| a.value.partial_cmp(&b.value).unwrap());
-            let closest = get_closest(&distances);
-            non_dominated.remove(closest.from);
-        }
-    }
-}
-
 fn get_closest(distances: &[Distance]) -> &Distance {
     if (distances[0].value == distances[1].value) && (distances[0].from != distances[1].from) {
         match distance_tiebreak(distances, 0, 1) {
@@ -89,11 +89,6 @@ fn distance_tiebreak(distances: &[Distance], i: usize, j: usize) -> Option<&Dist
         .iter()
         .filter(|d| d.from == j || d.to == j)
         .collect();
-
-    println!("{:?}", d1);
-    println!("{:?}", d2);
-    // d1.sort_by(|a, b| a.value.partial_cmp(&b.value).unwrap());
-    // d2.sort_by(|a, b| a.value.partial_cmp(&b.value).unwrap());
 
     for i in 1..d1.len() {
         if d1[i].value < d2[i].value {
