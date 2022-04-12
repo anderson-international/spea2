@@ -61,35 +61,14 @@ fn get_binary_from_values(values: &[f32]) -> String {
     bin
 }
 
-// fn get_values_from_binary(bin: &str) -> Vec<f32> {
-//     let mut values: Vec<f32> = vec![];
-//     bin.split("0b").skip(1).for_each(|word| {
-//         let value = (i32::from_str_radix(&word, 2).unwrap() as f32) / 100.0;
-//         values.push(value)
-//     });
-//     values
-// }
-
-// fn get_binary_from_values(values: &[f32]) -> String {
-//     let bits: Vec<_> = values
-//         .iter()
-//         .map(|v| format!("{:032b}", v.to_bits()))
-//         .collect();
-//     bits.join("")
-// }
-
 fn get_values_from_binary(bin: &str) -> Vec<f32> {
     (0..bin.len() / 32)
-        .map(|(i)| {
+        .map(|i| {
             let start = i * 32;
             let end = start + 32;
             f32::from_bits(u32::from_str_radix(&bin[start..end], 2).unwrap())
         })
         .collect()
-
-    // bin.split(";")
-    //     .map(|bin| f32::from_bits(u32::from_str_radix(bin, 2).unwrap()))
-    //     .collect()
 }
 
 #[cfg(test)]
@@ -99,12 +78,9 @@ mod tests {
 
     #[test]
     fn reproduction_binary_encoding() {
-        // let values = vec![0f32, 1f32, f32::MAX, f32::MIN];
         let values = vec![0.0, -1.5, f32::MAX, f32::MIN];
         let s = get_binary_from_values(&values);
-
         let values2 = get_values_from_binary(&s);
-        println!("{:?}", values2);
         assert_eq!(values, values2);
     }
 }
