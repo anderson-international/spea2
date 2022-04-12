@@ -53,21 +53,37 @@ fn crossover(p1: &ModelItem, p2: &ModelItem) -> ModelItem {
     todo!()
 }
 
+// fn get_binary_from_values(values: &[f32]) -> String {
+//     let mut bin = String::new();
+//     values.iter().for_each(|v| {
+//         bin.push_str(format!("{:#b}", (v * 100.0) as u32).as_str());
+//     });
+//     bin
+// }
+
+// fn get_values_from_binary(bin: &str) -> Vec<f32> {
+//     let mut values: Vec<f32> = vec![];
+//     bin.split("0b").skip(1).for_each(|word| {
+//         let value = (i32::from_str_radix(&word, 2).unwrap() as f32) / 100.0;
+//         values.push(value)
+//     });
+//     values
+// }
+
 fn get_binary_from_values(values: &[f32]) -> String {
-    let mut bin = String::new();
-    values.iter().for_each(|v| {
-        bin.push_str(format!("{:#b}", (v * 100.0) as u32).as_str());
-    });
-    bin
+    let bits: Vec<_> = values
+        .iter()
+        .map(|v| v.to_bits().to_string())
+        .collect();
+    bits.join(";")
 }
 
 fn get_values_from_binary(bin: &str) -> Vec<f32> {
-    let mut values: Vec<f32> = vec![];
-    bin.split("0b").skip(1).for_each(|word| {
-        let value = (i32::from_str_radix(&word, 2).unwrap() as f32) / 100.0;
-        values.push(value)
-    });
-    values
+    bin.split(";")
+        .map(|bits| {
+            f32::from_bits(bits.parse().unwrap())
+        })
+        .collect()
 }
 
 #[cfg(test)]
@@ -93,12 +109,9 @@ mod tests {
     }
     #[test]
     fn reproduction_negatives() {
-        let vals = vec![-255.0];
-        let b = get_binary_from_values(&vals);
-        println!("{:?}", &b);
-        let v = get_values_from_binary(b.as_str());
-        println!("{:?}", &v);
-        println!("{:?}", i32::from_str_radix("-0b110001110011100", 2).unwrap());
-        assert_eq!(v, vals);
+        let values = vec![0f32, 1f32, f32::MAX, f32::MIN];
+        let s = get_binary_from_values(&values);
+        let values2 = get_values_from_binary(&s);
+        assert_eq!(values, values2);
     }
 }
