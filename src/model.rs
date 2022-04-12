@@ -1,3 +1,5 @@
+use std::fmt::format;
+
 pub trait Spea2Model {
     fn get_model(self) -> Model;
 }
@@ -7,6 +9,7 @@ pub struct Model {
     pub objectives: Vec<Objective>,
     pub population: Vec<ModelItem>,
     pub archive: Vec<ModelItem>,
+    pub mating_pool: Vec<ModelItem>,
 }
 
 #[derive(Debug, Clone)]

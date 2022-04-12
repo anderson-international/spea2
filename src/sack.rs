@@ -86,6 +86,7 @@ impl Spea2Model for SackPool {
                 values: vec![3.0, 4.0],
                 fitness: 0.0,
             }],
+            mating_pool: vec![],
         };
         model
     }

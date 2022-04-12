@@ -12,6 +12,7 @@ quickersort = "3.0.1"
 criterion = "0.3"
 lazy_static = "1.4.0"
 
+
 [[bin]]
 name="spea2"
 path="src/bin/main.rs"
