@@ -185,11 +185,3 @@ impl Spea2Model for BenchModel {
 pub fn spea2model_for_bench() -> BenchModel {
     BenchModel::new()
 }
-
-pub fn get_values_and_binary() -> (Vec<f32>, String) {
-    (
-        vec![1.1, 255.2],
-        // "0000000000000000000000000110111000000000000000000000000011011100".to_string(),
-        "0b11011100b110001110110000".to_string(),
-    )
-}

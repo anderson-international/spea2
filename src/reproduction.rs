@@ -53,13 +53,13 @@ fn crossover(p1: &ModelItem, p2: &ModelItem) -> ModelItem {
     todo!()
 }
 
-// fn get_binary_from_values(values: &[f32]) -> String {
-//     let mut bin = String::new();
-//     values.iter().for_each(|v| {
-//         bin.push_str(format!("{:#b}", (v * 100.0) as u32).as_str());
-//     });
-//     bin
-// }
+fn get_binary_from_values(values: &[f32]) -> String {
+    let mut bin = String::with_capacity(values.len() * 32);
+    values.iter().for_each(|v| {
+        bin.push_str(&format!("{:032b}", v.to_bits()));
+    });
+    bin
+}
 
 // fn get_values_from_binary(bin: &str) -> Vec<f32> {
 //     let mut values: Vec<f32> = vec![];
@@ -70,48 +70,41 @@ fn crossover(p1: &ModelItem, p2: &ModelItem) -> ModelItem {
 //     values
 // }
 
-fn get_binary_from_values(values: &[f32]) -> String {
-    let bits: Vec<_> = values
-        .iter()
-        .map(|v| v.to_bits().to_string())
-        .collect();
-    bits.join(";")
-}
+// fn get_binary_from_values(values: &[f32]) -> String {
+//     let bits: Vec<_> = values
+//         .iter()
+//         .map(|v| format!("{:032b}", v.to_bits()))
+//         .collect();
+//     bits.join("")
+// }
 
 fn get_values_from_binary(bin: &str) -> Vec<f32> {
-    bin.split(";")
-        .map(|bits| {
-            f32::from_bits(bits.parse().unwrap())
+    (0..bin.len() / 32)
+        .map(|(i)| {
+            let start = i * 32;
+            let end = start + 32;
+            f32::from_bits(u32::from_str_radix(&bin[start..end], 2).unwrap())
         })
         .collect()
+
+    // bin.split(";")
+    //     .map(|bin| f32::from_bits(u32::from_str_radix(bin, 2).unwrap()))
+    //     .collect()
 }
 
 #[cfg(test)]
 mod tests {
-    use crate::mocks;
 
     use super::*;
 
     #[test]
-    fn reproduction_get_binary_from_values() {
-        let (vals, bin) = mocks::get_values_and_binary();
-        let b = get_binary_from_values(&vals);
-        println!("{:?}", b);
-        assert_eq!(b, bin);
-    }
-
-    #[test]
-    fn reproduction_get_values_from_binary() {
-        let (vals, bin) = mocks::get_values_and_binary();
-        let v = get_values_from_binary(bin.as_str());
-        assert_eq!(v, vals);
-        println!("{:?}", v);
-    }
-    #[test]
-    fn reproduction_negatives() {
-        let values = vec![0f32, 1f32, f32::MAX, f32::MIN];
+    fn reproduction_binary_encoding() {
+        // let values = vec![0f32, 1f32, f32::MAX, f32::MIN];
+        let values = vec![0.0, -1.5, f32::MAX, f32::MIN];
         let s = get_binary_from_values(&values);
+
         let values2 = get_values_from_binary(&s);
+        println!("{:?}", values2);
         assert_eq!(values, values2);
     }
 }
