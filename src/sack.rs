@@ -74,20 +74,15 @@ impl SackPool {
 
 impl Spea2Model for SackPool {
     fn get_model(self) -> Model {
-        let model = Model {
-            population: vec![ModelItem {
-                values: vec![1.0, 2.0],
-                fitness: 0.0,
-            }],
-            objectives: vec![Objective {
-                direction: Direction::Maximised,
-            }],
-            archive: vec![ModelItem {
-                values: vec![3.0, 4.0],
-                fitness: 0.0,
-            }],
-            mating_pool: vec![],
-        };
+        let mut model = Model::default();
+        model.population.push(ModelItem {
+            values: vec![1.0, 2.0],
+            fitness: 0.0,
+        });
+        model.archive.push(ModelItem {
+            values: vec![3.0, 4.0],
+            fitness: 0.0,
+        });
         model
     }
 }

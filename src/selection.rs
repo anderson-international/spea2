@@ -28,20 +28,22 @@ fn ensure_archive_size(
     mut dominated: Vec<ModelItem>,
     non_dominated: &mut Vec<ModelItem>,
     archive_max: usize,
-) {
+) -> Vec<Distance> {
     let nd_len = non_dominated.len();
+    let mut distances: Vec<Distance> = vec![];
     if nd_len < archive_max {
         dominated.sort_by(|a, b| a.fitness.partial_cmp(&b.fitness).unwrap());
         dominated.truncate(archive_max - nd_len);
         non_dominated.extend(dominated);
     } else if nd_len > archive_max {
         while non_dominated.len() > archive_max {
-            let mut distances = get_orderable_distances(&non_dominated);
+            distances = get_orderable_distances(&non_dominated);
             distances.sort_by(|a, b| a.value.partial_cmp(&b.value).unwrap());
             let closest = get_closest(&distances);
             non_dominated.remove(closest.from);
         }
     }
+    distances
 }
 
 fn get_orderable_distances(dominated: &Vec<ModelItem>) -> Vec<Distance> {

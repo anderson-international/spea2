@@ -1,5 +1,3 @@
-use std::fmt::format;
-
 pub trait Spea2Model {
     fn get_model(self) -> Model;
 }
@@ -10,8 +8,28 @@ pub struct Model {
     pub population: Vec<ModelItem>,
     pub archive: Vec<ModelItem>,
     pub mating_pool: Vec<ModelItem>,
+    pub crossover_sort_index: usize,
 }
-
+impl Model {
+    pub fn get_next_crossover_sort_index(&mut self) -> usize {
+        self.crossover_sort_index += 1;
+        if self.crossover_sort_index >= self.objectives.len() {
+            self.crossover_sort_index = 0;
+        }
+        self.crossover_sort_index
+    }
+}
+impl Default for Model {
+    fn default() -> Self {
+        Self {
+            objectives: Vec::new(),
+            population: Vec::new(),
+            archive: Vec::new(),
+            mating_pool: Vec::new(),
+            crossover_sort_index: 0,
+        }
+    }
+}
 #[derive(Debug, Clone)]
 pub struct Objective {
     pub direction: Direction,

@@ -2,20 +2,15 @@ use crate::constants;
 use crate::model::{Direction, Distance, Model, ModelItem, Objective, Spea2Model};
 
 fn model_init(population_count: usize, archive_count: usize) -> Model {
-    let mut model = Model {
-        objectives: vec![
-            Objective {
-                direction: Direction::Maximised,
-            },
-            Objective {
-                direction: Direction::Minimised,
-            },
-        ],
-        population: vec![],
-        archive: vec![],
-        mating_pool: vec![],
-    };
-
+    let mut model = Model::default();
+    model.objectives = vec![
+        Objective {
+            direction: Direction::Maximised,
+        },
+        Objective {
+            direction: Direction::Minimised,
+        },
+    ];
     for _ in 0..population_count {
         model.population.push(ModelItem {
             values: vec![0.0; 2],
@@ -28,7 +23,6 @@ fn model_init(population_count: usize, archive_count: usize) -> Model {
             fitness: 0.0,
         });
     }
-
     model
 }
 
