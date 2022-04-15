@@ -1,7 +1,9 @@
+use rand::prelude::SliceRandom;
+
 use crate::constants;
 use crate::model::{Direction, Distance, Model, ModelItem, Objective, Spea2Model};
 
-fn model_init(population_count: usize, archive_count: usize) -> Model {
+fn model_init(population_count: usize, archive_count: usize, mating_pool_count: usize) -> Model {
     let mut model = Model::default();
     model.objectives = vec![
         Objective {
@@ -23,11 +25,19 @@ fn model_init(population_count: usize, archive_count: usize) -> Model {
             fitness: 0.0,
         });
     }
+    for i in 0..mating_pool_count {
+        let v = i as f32;
+        let c = mating_pool_count as f32;
+        model.mating_pool.push(ModelItem {
+            values: vec![v, c - v],
+            fitness: 0.0,
+        });
+    }
     model
 }
 
 pub fn get_model() -> Model {
-    let mut model = model_init(2, 1);
+    let mut model = model_init(2, 1, 0);
     model.population[0].values = vec![0.0, 0.0];
     model.population[1].values = vec![4.0, 0.0];
     model.archive[0].values = vec![0.0, 3.0];
@@ -40,6 +50,14 @@ pub fn get_model_with_fitness() -> Model {
     model.population[1].fitness = 1.5;
     model.archive[0].fitness = 0.9;
     model
+}
+
+pub fn get_model_for_reproduction() -> Model {
+    model_init(0, 0, 100)
+}
+
+pub fn get_model_for_mating_pool_selection() -> Model {
+    model_init(0, 100, 0)
 }
 
 pub fn get_dominated() -> Vec<ModelItem> {
@@ -167,6 +185,7 @@ impl BenchModel {
         let model = model_init(
             *constants::POPULATION_COUNT_BENCH,
             *constants::ARCHIVE_MAX_BENCH,
+            0,
         );
         Self { model }
     }

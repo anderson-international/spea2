@@ -8,15 +8,16 @@ pub struct Model {
     pub population: Vec<ModelItem>,
     pub archive: Vec<ModelItem>,
     pub mating_pool: Vec<ModelItem>,
-    pub crossover_sort_index: usize,
+    crossover_sort_index: usize,
 }
 impl Model {
-    pub fn get_next_crossover_sort_index(&mut self) -> usize {
+    pub fn next_objective_sort_index(&mut self) -> usize {
+        let index = self.crossover_sort_index;
         self.crossover_sort_index += 1;
         if self.crossover_sort_index >= self.objectives.len() {
             self.crossover_sort_index = 0;
         }
-        self.crossover_sort_index
+        index
     }
 }
 impl Default for Model {
