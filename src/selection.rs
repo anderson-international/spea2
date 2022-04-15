@@ -1,181 +1,181 @@
-// use crate::{ModelValues, OrderedValue, ARCHIVE_SIZE};
+use crate::constants::ARCHIVE_MAX;
+use crate::model::{Distance, Model, ModelItem};
 
-// pub(crate) fn environmental_selection(
-//     archive: &mut ModelValues,
-//     union: &ModelValues,
-//     fitness: Vec<OrderedValue>,
-//     non_dominated: Vec<usize>,
-//     distances: Vec<Vec<f32>>,
-// ) {
-//     add_decisions_by_index(archive, union, non_dominated);
-//     if archive.count < *ARCHIVE_SIZE {
-//         top_up_archive_with_dominated(archive, union, fitness);
-//     } else if archive.count > *ARCHIVE_SIZE {
-//         truncate_archive_by_distance(archive, distances);
-//     }
-// }
+pub fn apply_selection(model: &mut Model) {
+    let (dominated, mut non_dominated) = drain_model_by_dominance(model);
+    ensure_archive_size(dominated, &mut non_dominated, *ARCHIVE_MAX);
+    model.archive = non_dominated;
+}
 
-// fn truncate_archive_by_distance(archive: &mut ModelValues, distances: Vec<Vec<f32>>) {
-//     // let mut remove = vec![];
-//     // let mut m: (usize, &Vec<f32>) = (0, &vec![]);
-//     // // while count > *ARCHIVE_SIZE {
-//     // while remove.len() < 3 {
-//     //     let (index, min) = distances
-//     //         .iter()
-//     //         .enumerate()
-//     //         .skip(remove.len())
-//     //         .reduce(|(i, accum), (j, item)| {
-//     //             for (av, iv) in accum.iter().zip(item) {
-//     //                 if av < iv {
-//     //                     m = (i, accum);
-//     //                     break;
-//     //                 } else if av > iv {
-//     //                     m = (j, item);
-//     //                     break;
-//     //                 } else {
-//     //                     continue;
-//     //                 };
-//     //             }
-//     //             m
-//     //         })
-//     //         .unwrap();
-//     //     println!("{:?}", min);
-//     //     remove.push(index);
-//     //     println!("{:?}", remove);
-//     // }
+fn drain_model_by_dominance(model: &mut Model) -> (Vec<ModelItem>, Vec<ModelItem>) {
+    let mut dominated: Vec<ModelItem> = vec![];
+    let mut non_dominated: Vec<ModelItem> = vec![];
+    model
+        .population
+        .drain(..)
+        .chain(model.archive.drain(..))
+        .for_each(|item| {
+            if item.fitness < 1.0 {
+                non_dominated.push(item);
+            } else {
+                dominated.push(item);
+            }
+        });
+    (dominated, non_dominated)
+}
 
-// }
+fn ensure_archive_size(
+    mut dominated: Vec<ModelItem>,
+    non_dominated: &mut Vec<ModelItem>,
+    archive_max: usize,
+) -> Vec<Distance> {
+    let nd_len = non_dominated.len();
+    let mut distances: Vec<Distance> = vec![];
+    if nd_len < archive_max {
+        dominated.sort_by(|a, b| a.fitness.partial_cmp(&b.fitness).unwrap());
+        dominated.truncate(archive_max - nd_len);
+        non_dominated.extend(dominated);
+    } else if nd_len > archive_max {
+        while non_dominated.len() > archive_max {
+            distances = get_orderable_distances(&non_dominated);
+            distances.sort_by(|a, b| a.value.partial_cmp(&b.value).unwrap());
+            let closest = get_closest(&distances);
+            non_dominated.remove(closest.from);
+        }
+    }
+    distances
+}
 
-// fn top_up_archive_with_dominated(
-//     archive: &mut ModelValues,
-//     union: &ModelValues,
-//     mut fitness: Vec<OrderedValue>,
-// ) {
-//     let mut dominated: Vec<OrderedValue> = fitness.drain(..).filter(|ov| ov.value >= 1.0).collect();
-//     println!("{:#?}", dominated);
-//     dominated.sort_by(|a, b| a.value.partial_cmp(&b.value).unwrap());
-//     let mut len = *ARCHIVE_SIZE - archive.count;
-//     if len > dominated.len() {
-//         len = dominated.len()
-//     };
-//     let dominated_indices = dominated[0..len].iter().map(|ov| ov.index).collect();
+fn get_orderable_distances(dominated: &Vec<ModelItem>) -> Vec<Distance> {
+    let d_len = dominated.len();
+    let mut distances: Vec<Distance> = vec![];
 
-//     add_decisions_by_index(archive, union, dominated_indices);
-// }
+    for i in 0..d_len {
+        for j in i + 1..d_len {
+            let mut distance: f32 = 0.0;
+            dominated[i]
+                .values
+                .iter()
+                .zip(dominated[j].values.iter())
+                .for_each(|(a, b)| {
+                    distance += (a - b).powf(2.0);
+                });
+            distance = distance.sqrt();
+            distances.push(Distance {
+                from: i,
+                to: j,
+                value: distance,
+            });
+        }
+    }
+    distances
+}
 
-// fn add_decisions_by_index(archive: &mut ModelValues, union: &ModelValues, indices: Vec<usize>) {
-//     for i in 0..indices.len() {
-//         let decision_value_index = indices[i];
-//         for j in 0..archive.decisions.len() {
-//             archive.decisions[j]
-//                 .values
-//                 .push(union.decisions[j].values[decision_value_index]);
-//         }
-//     }
-//     archive.count += indices.len();
-// }
+fn get_closest(distances: &[Distance]) -> &Distance {
+    if (distances[0].value == distances[1].value) && (distances[0].from != distances[1].from) {
+        match distance_tiebreak(distances, 0, 1) {
+            Some(d) => d,
+            None => &distances[0],
+        }
+    } else {
+        &distances[0]
+    }
+}
 
-// #[cfg(test)]
-// mod tests {
-//     use crate::{DecisionValues, modname::Direction};
+fn distance_tiebreak(distances: &[Distance], i: usize, j: usize) -> Option<&Distance> {
+    let d1: Vec<&Distance> = distances
+        .iter()
+        .filter(|d| d.from == i || d.to == i)
+        .collect();
+    let d2: Vec<&Distance> = distances
+        .iter()
+        .filter(|d| d.from == j || d.to == j)
+        .collect();
 
-//     use super::*;
-//     fn get_mock_union() -> ModelValues {
-//         let archive = ModelValues {
-//             count: 8,
-//             decision_count: 2,
-//             decisions: vec![
-//                 DecisionValues::new(
-//                     Direction::Minimised,
-//                     vec![1.0, 2.0, 3.0, 4.0, 5.0, 6.0, 7.0, 8.0],
-//                 ),
-//                 DecisionValues::new(
-//                     Direction::Maximised,
-//                     vec![8.0, 7.0, 6.0, 5.0, 4.0, 3.0, 2.0, 1.0],
-//                 ),
-//             ],
-//         };
-//         archive
-//     }
-//     fn get_mock_archive() -> ModelValues {
-//         let archive = ModelValues {
-//             count: 4,
-//             decision_count: 2,
-//             decisions: vec![
-//                 DecisionValues::new(Direction::Minimised, vec![5.0, 6.0, 7.0, 8.0]),
-//                 DecisionValues::new(Direction::Maximised, vec![8.0, 7.0, 6.0, 5.0]),
-//             ],
-//         };
-//         archive
-//     }
-//     fn get_mock_fitness() -> Vec<OrderedValue> {
-//         let fitness = vec![
-//             OrderedValue {
-//                 index: 4,
-//                 value: 0.1,
-//             },
-//             OrderedValue {
-//                 index: 3,
-//                 value: 0.9,
-//             },
-//             OrderedValue {
-//                 index: 0,
-//                 value: 1.1,
-//             },
-//             OrderedValue {
-//                 index: 2,
-//                 value: 2.1,
-//             },
-//         ];
-//         fitness
-//     }
-//     fn get_mock_distances() -> Vec<Vec<f32>> {
-//         let distances = vec![
-//             vec![4.0, 5.0, 6.0],
-//             vec![7.0, 8.0, 9.0],
-//             vec![10.0, 11.0, 12.0],
-//             vec![1.0, 2.0, 3.0],
-//         ];
-//         distances
-//     }
-//     #[test]
-//     pub fn test_add_non_dominated_to_archive() {
-//         let union = get_mock_union();
-//         let mut archive = get_mock_archive();
-//         let non_dominated = vec![0, 2];
+    for i in 1..d1.len() {
+        if d1[i].value < d2[i].value {
+            return Some(d1[i]);
+        } else if d2[i].value < d1[i].value {
+            return Some(d2[i]);
+        }
+    }
+    None
+}
 
-//         assert_eq!(archive.count, 4);
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::mocks;
+    #[test]
+    fn test_drain_model_by_dominance() {
+        let mut model = mocks::get_model_with_fitness();
+        let (dominated, non_dominated) = drain_model_by_dominance(&mut model);
+        assert!(dominated.iter().all(|item| item.fitness >= 1.0));
+        assert!(non_dominated.iter().all(|item| item.fitness < 1.0));
+        assert_eq!(model.population.len(), 0);
+        assert_eq!(model.archive.len(), 0);
+    }
 
-//         add_decisions_by_index(&mut archive, &union, non_dominated);
+    #[test]
+    fn test_get_orderable_distances() {
+        let dominated = mocks::get_dominated();
+        let distances = get_orderable_distances(&dominated);
+        assert_eq!(
+            distances[0],
+            Distance {
+                from: 0,
+                to: 1,
+                value: 4.0,
+            }
+        );
+        assert_eq!(
+            distances[1],
+            Distance {
+                from: 0,
+                to: 2,
+                value: 3.0,
+            }
+        );
+        assert_eq!(
+            distances[2],
+            Distance {
+                from: 1,
+                to: 2,
+                value: 5.0,
+            }
+        );
+    }
 
-//         assert_eq!(archive.count, 6);
-//         assert_eq!(archive.decisions[0].values[4], 1.0);
-//         assert_eq!(archive.decisions[1].values[4], 8.0);
-//         assert_eq!(archive.decisions[0].values[5], 3.0);
-//         assert_eq!(archive.decisions[1].values[5], 6.0);
+    #[test]
+    fn test_ensure_archive_size_extend() {
+        test_ensure_archive_size(5);
+    }
 
-//         println!("{:#?}", archive);
-//     }
+    #[test]
+    fn test_ensure_archive_size_truncate() {
+        test_ensure_archive_size(2);
+    }
 
-//     #[test]
-//     fn test_top_up_archive_with_dominated() {
-//         let union = get_mock_union();
-//         let mut archive = get_mock_archive();
-//         let fitness = get_mock_fitness();
+    fn test_ensure_archive_size(archive_max: usize) {
+        let dominated = mocks::get_dominated();
+        let mut non_dominated = mocks::get_non_dominated();
+        ensure_archive_size(dominated, &mut non_dominated, archive_max);
+        assert_eq!(non_dominated.len(), archive_max);
+    }
 
-//         top_up_archive_with_dominated(&mut archive, &union, fitness);
+    #[test]
+    fn test_get_closest() {
+        let distances = mocks::get_sorted_distances();
+        let closest = get_closest(&distances);
+        assert_eq!(closest, &distances[0]);
+    }
 
-//         assert_eq!(archive.count, 6);
-//         assert_eq!(archive.decisions[0].values[4], 1.0);
-//         assert_eq!(archive.decisions[1].values[4], 8.0);
-//         assert_eq!(archive.decisions[0].values[5], 3.0);
-//         assert_eq!(archive.decisions[1].values[5], 6.0);
-//     }
-
-//     #[test]
-//     fn test_truncate_archive_by_distance() {
-//         let mut archive = get_mock_archive();
-//         let distances = get_mock_distances();
-//         truncate_archive_by_distance(&mut archive, distances);
-//     }
-// }
+    #[test]
+    fn test_get_closest_with_tiebreak() {
+        let mut distances = mocks::get_distances_with_tie();
+        distances.sort_by(|a, b| a.value.partial_cmp(&b.value).unwrap());
+        let closest = get_closest(&distances);
+        assert_eq!(closest.from, 1);
+        assert_eq!(closest.to, 3);
+    }
+}
