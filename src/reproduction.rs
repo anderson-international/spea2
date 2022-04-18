@@ -1,21 +1,20 @@
 use crate::constants::POPULATION_COUNT;
 use crate::crossover;
-use crate::model::Model;
+use crate::model::{Model, ModelItem};
 use crate::mutation;
 extern crate itermore;
 use rand::Rng;
 
-pub fn reproduce(model: &mut Model) {
+pub fn reproduce(model: &mut Model, is_item_feasible: &Box<dyn Fn(&ModelItem) -> bool>) {
     select_mating_pool(model);
     crossover::neighbourhood_crossover(model);
-    mutation::mutate(model);
+    mutation::mutate(model, is_item_feasible);
+    set_next_population(model);
 }
 
 fn select_mating_pool(model: &mut Model) {
     let mut rng = rand::thread_rng();
     let len = model.archive.len();
-
-    model.mating_pool.clear();
 
     for _ in 0..*POPULATION_COUNT {
         let i = rng.gen_range(0..len) as usize;
@@ -29,6 +28,11 @@ fn select_mating_pool(model: &mut Model) {
             model.mating_pool.push(model.archive[j].clone());
         }
     }
+}
+
+fn set_next_population(model: &mut Model) {
+    model.population.clear();
+    model.population.append(&mut model.mating_pool);
 }
 
 #[cfg(test)]
@@ -45,5 +49,18 @@ mod tests {
         select_mating_pool(&mut model);
 
         assert_eq!(model.mating_pool.len(), *POPULATION_COUNT);
+    }
+
+    #[test]
+    fn reproduction_set_next_population() {
+        let mut model = mocks::get_model_for_reproduction();
+
+        assert_eq!(model.population.len(), 0);
+        assert_eq!(model.mating_pool.len(), 100);
+
+        set_next_population(&mut model);
+
+        assert_eq!(model.population.len(), 100);
+        assert_eq!(model.mating_pool.len(), 0);
     }
 }

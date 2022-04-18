@@ -1,5 +1,6 @@
 pub trait Spea2Model {
-    fn get_model(self) -> Model;
+    fn get_model(&self) -> Model;
+    fn get_feasibility_test(&self) -> Box<dyn Fn(&ModelItem) -> bool>;
 }
 
 #[derive(Debug, Clone)]
@@ -34,6 +35,8 @@ impl Default for Model {
 #[derive(Debug, Clone)]
 pub struct Objective {
     pub direction: Direction,
+    pub min: f32,
+    pub max: f32,
 }
 
 #[derive(Debug, Clone)]

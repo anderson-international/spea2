@@ -2,7 +2,7 @@ use rand::Rng;
 
 use crate::{
     item::ItemPool,
-    model::{Direction, Model, ModelItem, Objective, Spea2Model},
+    model::{Model, ModelItem, Spea2Model},
 };
 
 #[derive(Debug, Clone)]
@@ -73,7 +73,7 @@ impl SackPool {
 }
 
 impl Spea2Model for SackPool {
-    fn get_model(self) -> Model {
+    fn get_model(&self) -> Model {
         let mut model = Model::default();
         model.population.push(ModelItem {
             values: vec![1.0, 2.0],
@@ -84,5 +84,12 @@ impl Spea2Model for SackPool {
             fitness: 0.0,
         });
         model
+    }
+
+    fn get_feasibility_test(&self) -> Box<dyn Fn(&ModelItem) -> bool> {
+        Box::new(move |item| {
+            let mut rng = rand::thread_rng();
+            rng.gen_range(0f32..1f32) > 0.5
+        })
     }
 }

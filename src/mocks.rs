@@ -1,16 +1,19 @@
-use rand::prelude::SliceRandom;
-
 use crate::constants;
-use crate::model::{Direction, Distance, Model, ModelItem, Objective, Spea2Model};
+use crate::model::*;
+use rand::Rng;
 
 fn model_init(population_count: usize, archive_count: usize, mating_pool_count: usize) -> Model {
     let mut model = Model::default();
     model.objectives = vec![
         Objective {
             direction: Direction::Maximised,
+            min: 0.0,
+            max: 255.0,
         },
         Objective {
             direction: Direction::Minimised,
+            min: 0.0,
+            max: 255.0,
         },
     ];
     for _ in 0..population_count {
@@ -34,6 +37,12 @@ fn model_init(population_count: usize, archive_count: usize, mating_pool_count: 
         });
     }
     model
+}
+
+pub fn get_always_feasible() -> Box<dyn Fn(&ModelItem) -> bool> {
+    Box::new(move |item| {
+        true
+    })
 }
 
 pub fn get_model() -> Model {
@@ -190,9 +199,16 @@ impl BenchModel {
         Self { model }
     }
 }
+
 impl Spea2Model for BenchModel {
-    fn get_model(self) -> Model {
-        self.model
+    fn get_model(&self) -> Model {
+        self.model.clone()
+    }
+    fn get_feasibility_test(&self) -> Box<dyn Fn(&ModelItem) -> bool> {
+        Box::new(move |item| {
+            let mut rng = rand::thread_rng();
+            rng.gen_range(0f32..1f32) > 0.5
+        })
     }
 }
 pub fn spea2model_for_bench() -> BenchModel {
