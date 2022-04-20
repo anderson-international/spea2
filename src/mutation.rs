@@ -2,7 +2,7 @@ use rand::Rng;
 
 use crate::{
     constants::MUTATION_RATE,
-    model::{Model, MutOp, Spea2Model},
+    model::{Model, MutOp},
 };
 
 pub fn mutate(model: &mut Model, mutate: MutOp<'_>) {
@@ -18,9 +18,7 @@ pub fn mutate(model: &mut Model, mutate: MutOp<'_>) {
 #[cfg(test)]
 mod tests {
 
-    use crate::mocks;
-
-    use super::*;
+    use crate::{mocks, model::Spea2Model};
 
     #[test]
     fn mutation_perform_mutation() {
