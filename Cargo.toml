@@ -5,16 +5,15 @@ edition = "2021"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
+[[example]]
+name = "knapsack"
+
 [dependencies]
 rand = "0.8.5"
 quickersort = "3.0.1"
 criterion = "0.3"
 lazy_static = "1.4.0"
 itermore = "0.2.0"
-
-[[bin]]
-name="spea2"
-path="src/bin/main.rs"
 
 [lib]
 name="spea2"

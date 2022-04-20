@@ -1,14 +1,13 @@
 use crate::constants::POPULATION_COUNT;
-use crate::crossover;
-use crate::model::{Model, ModelItem};
-use crate::mutation;
+use crate::model::{Model, MutOp};
+use crate::{crossover, mutation};
 extern crate itermore;
 use rand::Rng;
 
-pub fn reproduce(model: &mut Model, is_item_feasible: &Box<dyn Fn(&ModelItem) -> bool>) {
+pub fn reproduce(model: &mut Model, mutate:MutOp<'_>) {
     select_mating_pool(model);
     crossover::neighbourhood_crossover(model);
-    mutation::mutate(model, is_item_feasible);
+    mutation::mutate(model, mutate);
     set_next_population(model);
 }
 

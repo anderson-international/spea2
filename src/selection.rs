@@ -4,7 +4,7 @@ use crate::model::{Distance, Model, ModelItem};
 pub fn apply_selection(model: &mut Model) {
     let (dominated, mut non_dominated) = drain_model_by_dominance(model);
     ensure_archive_size(dominated, &mut non_dominated, *ARCHIVE_MAX);
-    model.archive = non_dominated;
+    // model.archive = non_dominated;
 }
 
 fn drain_model_by_dominance(model: &mut Model) -> (Vec<ModelItem>, Vec<ModelItem>) {

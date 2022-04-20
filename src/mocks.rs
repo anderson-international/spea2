@@ -1,4 +1,4 @@
-use crate::constants;
+use crate::constants::*;
 use crate::model::*;
 use rand::Rng;
 
@@ -6,43 +6,36 @@ fn model_init(population_count: usize, archive_count: usize, mating_pool_count: 
     let mut model = Model::default();
     model.objectives = vec![
         Objective {
+            name: "objective_max".to_string(),
             direction: Direction::Maximised,
             min: 0.0,
             max: 255.0,
         },
         Objective {
+            name: "objective_min".to_string(),
             direction: Direction::Minimised,
             min: 0.0,
             max: 255.0,
         },
     ];
-    for _ in 0..population_count {
-        model.population.push(ModelItem {
-            values: vec![0.0; 2],
-            fitness: 0.0,
-        });
-    }
-    for _ in 0..archive_count {
-        model.archive.push(ModelItem {
-            values: vec![0.0; 2],
-            fitness: 0.0,
-        });
-    }
-    for i in 0..mating_pool_count {
-        let v = i as f32;
-        let c = mating_pool_count as f32;
-        model.mating_pool.push(ModelItem {
-            values: vec![v, c - v],
-            fitness: 0.0,
-        });
-    }
-    model
-}
 
-pub fn get_always_feasible() -> Box<dyn Fn(&ModelItem) -> bool> {
-    Box::new(move |item| {
-        true
-    })
+    model.population = (0..population_count)
+        .map(|_| ModelItem::new(vec![0.0, 0.0]))
+        .collect();
+
+    model.archive = (0..archive_count)
+        .map(|_| ModelItem::new(vec![0.0, 0.0]))
+        .collect();
+
+    model.mating_pool = (0..mating_pool_count)
+        .map(|i| {
+            let v = i as f32;
+            let c = mating_pool_count as f32;
+            ModelItem::new(vec![v, c - v])
+        })
+        .collect();
+
+    model
 }
 
 pub fn get_model() -> Model {
@@ -184,33 +177,35 @@ pub fn get_distances_with_tie() -> Vec<Distance> {
     });
     distances
 }
-
-#[derive(Debug)]
-pub struct BenchModel {
-    pub model: Model,
+pub fn get_spea2model() -> MockSpea2Model {
+    MockSpea2Model {}
 }
-impl BenchModel {
-    pub fn new() -> Self {
-        let model = model_init(
-            *constants::POPULATION_COUNT_BENCH,
-            *constants::ARCHIVE_MAX_BENCH,
-            0,
-        );
-        Self { model }
-    }
-}
-
-impl Spea2Model for BenchModel {
+#[derive(Debug, Clone)]
+pub struct MockSpea2Model {}
+impl Spea2Model for MockSpea2Model {
     fn get_model(&self) -> Model {
-        self.model.clone()
+        model_init(*POPULATION_COUNT, *ARCHIVE_MAX, 10)
     }
-    fn get_feasibility_test(&self) -> Box<dyn Fn(&ModelItem) -> bool> {
-        Box::new(move |item| {
+
+    fn get_mutation_operator(&self) -> MutOp<'_> {
+        let mut_op = move |model: &mut Model, index: usize| -> ModelItem {
             let mut rng = rand::thread_rng();
-            rng.gen_range(0f32..1f32) > 0.5
-        })
+            let mut item = model.mating_pool[index].clone();
+            let i = rng.gen_range(0..model.objectives.len());
+            let Objective { min, max, .. } = model.objectives[i];
+
+            loop {
+                item.values[i] = rng.gen_range(min..=max);
+                if self.is_item_feasible(&item) {
+                    break;
+                }
+            }
+            item
+        };
+        Box::new(mut_op)
     }
-}
-pub fn spea2model_for_bench() -> BenchModel {
-    BenchModel::new()
+
+    fn is_item_feasible(&self, item: &ModelItem) -> bool {
+        item.values[0] >= 0.0
+    }
 }

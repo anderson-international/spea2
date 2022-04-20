@@ -3,7 +3,7 @@ use spea2::mocks;
 
 fn criterion_benchmark(c: &mut Criterion) {
     c.bench_function("spea2", |b| {
-        b.iter(|| spea2::evolve(mocks::spea2model_for_bench()))
+        b.iter(|| spea2::evolve(mocks::get_spea2model()))
     });
 }
 

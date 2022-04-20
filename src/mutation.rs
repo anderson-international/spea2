@@ -1,31 +1,16 @@
-use crate::model::{Model, ModelItem, Objective};
-extern crate itermore;
 use rand::Rng;
 
-pub fn mutate(model: &mut Model, is_item_feasible: &Box<dyn Fn(&ModelItem) -> bool>) {
-    let mut rng = rand::thread_rng();
+use crate::{
+    constants::MUTATION_RATE,
+    model::{Model, MutOp, Spea2Model},
+};
 
-    model.mating_pool.iter_mut().for_each(|item| {
+pub fn mutate(model: &mut Model, mutate: MutOp<'_>) {
+    let mut rng = rand::thread_rng();
+    for index in 0..model.mating_pool.len() {
         let r = rng.gen_range(0f32..1f32);
-        if r < 0.06 {
-            perform_mutation(item, &model.objectives, is_item_feasible);
-        }
-    });
-}
-
-fn perform_mutation(
-    item: &mut ModelItem,
-    objectives: &[Objective],
-    is_item_feasible: &Box<dyn Fn(&ModelItem) -> bool>,
-) {
-    let mut rng = rand::thread_rng();
-    let i = rng.gen_range(0..objectives.len());
-    let Objective { min, max, .. } = objectives[i];
-
-    loop {
-        item.values[i] = rng.gen_range(min..=max);
-        if is_item_feasible(item) {
-            break;
+        if r < *MUTATION_RATE {
+            model.mating_pool[index] = mutate(model, index);
         }
     }
 }
@@ -39,14 +24,15 @@ mod tests {
 
     #[test]
     fn mutation_perform_mutation() {
-        let model = mocks::get_model_for_reproduction();
-        let mut item = model.mating_pool[0].clone();
-        let before = item.values.clone();
-        let is_item_feasible = mocks::get_always_feasible();
+        let spea2_model = mocks::get_spea2model();
+        let mut model = spea2_model.get_model();
+        let mutate = spea2_model.get_mutation_operator();
+        let before = model.mating_pool[0].clone();
+        let mutated = mutate(&mut model, 0);
 
-        perform_mutation(&mut item, &model.objectives, &is_item_feasible);
+        assert_ne!(before.values, mutated.values);
 
-        assert_ne!(before, item.values);
-
+        println!("{:?}", before);
+        println!("{:?}", mutated);
     }
 }

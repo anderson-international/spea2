@@ -1,22 +1,25 @@
+pub type MutOp<'a> = Box<dyn Fn(&mut Model, usize) -> ModelItem + 'a>;
+
 pub trait Spea2Model {
     fn get_model(&self) -> Model;
-    fn get_feasibility_test(&self) -> Box<dyn Fn(&ModelItem) -> bool>;
+    fn get_mutation_operator(&self) -> MutOp<'_>;
+    fn is_item_feasible(&self, item: &ModelItem) -> bool;
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug)]
 pub struct Model {
     pub objectives: Vec<Objective>,
     pub population: Vec<ModelItem>,
     pub archive: Vec<ModelItem>,
     pub mating_pool: Vec<ModelItem>,
-    crossover_sort_index: usize,
+    objective_sort_index: usize,
 }
 impl Model {
     pub fn next_objective_sort_index(&mut self) -> usize {
-        let index = self.crossover_sort_index;
-        self.crossover_sort_index += 1;
-        if self.crossover_sort_index >= self.objectives.len() {
-            self.crossover_sort_index = 0;
+        let index = self.objective_sort_index;
+        self.objective_sort_index += 1;
+        if self.objective_sort_index >= self.objectives.len() {
+            self.objective_sort_index = 0;
         }
         index
     }
@@ -28,12 +31,13 @@ impl Default for Model {
             population: Vec::new(),
             archive: Vec::new(),
             mating_pool: Vec::new(),
-            crossover_sort_index: 0,
+            objective_sort_index: 0,
         }
     }
 }
 #[derive(Debug, Clone)]
 pub struct Objective {
+    pub name: String,
     pub direction: Direction,
     pub min: f32,
     pub max: f32,
@@ -43,6 +47,15 @@ pub struct Objective {
 pub struct ModelItem {
     pub values: Vec<f32>,
     pub fitness: f32,
+}
+
+impl ModelItem {
+    pub fn new(values: Vec<f32>) -> Self {
+        Self {
+            values,
+            fitness: 0.0,
+        }
+    }
 }
 
 #[derive(Debug, Clone, PartialEq, PartialOrd)]
