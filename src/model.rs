@@ -1,4 +1,4 @@
-pub type MutOp<'a> = Box<dyn Fn(&mut Model, usize) -> ModelItem + 'a>;
+pub type MutOp<'a> = Box<dyn Fn(&[Objective], &mut ModelItem) + 'a>;
 
 pub trait Spea2Model {
     fn get_model(&self) -> Model;

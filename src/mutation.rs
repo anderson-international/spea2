@@ -7,12 +7,12 @@ use crate::{
 
 pub fn mutate(model: &mut Model, mutate: MutOp<'_>) {
     let mut rng = rand::thread_rng();
-    for index in 0..model.mating_pool.len() {
-        let r = rng.gen_range(0f32..1f32);
-        if r < *MUTATION_RATE {
-            model.mating_pool[index] = mutate(model, index);
+    let objectives = &model.objectives[..];
+    model.mating_pool.iter_mut().for_each(|item| {
+        if rng.gen::<f32>() < *MUTATION_RATE {
+            mutate(objectives, item);
         }
-    }
+    });
 }
 
 #[cfg(test)]
@@ -25,12 +25,13 @@ mod tests {
         let spea2_model = mocks::get_spea2model();
         let mut model = spea2_model.get_model();
         let mutate = spea2_model.get_mutation_operator();
-        let before = model.mating_pool[0].clone();
-        let mutated = mutate(&mut model, 0);
+        let mut item = model.mating_pool.get_mut(0).unwrap();
+        let before = item.clone();
+        mutate(&model.objectives[..], &mut item);
 
-        assert_ne!(before.values, mutated.values);
+        assert_ne!(before.values, item.values);
 
         println!("{:?}", before);
-        println!("{:?}", mutated);
+        println!("{:?}", item);
     }
 }

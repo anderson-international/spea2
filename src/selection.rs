@@ -4,7 +4,7 @@ use crate::model::{Distance, Model, ModelItem};
 pub fn apply_selection(model: &mut Model) {
     let (dominated, mut non_dominated) = drain_model_by_dominance(model);
     ensure_archive_size(dominated, &mut non_dominated, *ARCHIVE_MAX);
-    // model.archive = non_dominated;
+    model.archive = non_dominated;
 }
 
 fn drain_model_by_dominance(model: &mut Model) -> (Vec<ModelItem>, Vec<ModelItem>) {
@@ -107,7 +107,7 @@ mod tests {
     use super::*;
     use crate::mocks;
     #[test]
-    fn test_drain_model_by_dominance() {
+    fn selection_drain_model_by_dominance() {
         let mut model = mocks::get_model_with_fitness();
         let (dominated, non_dominated) = drain_model_by_dominance(&mut model);
         assert!(dominated.iter().all(|item| item.fitness >= 1.0));
@@ -117,7 +117,7 @@ mod tests {
     }
 
     #[test]
-    fn test_get_orderable_distances() {
+    fn selection_get_orderable_distances() {
         let dominated = mocks::get_dominated();
         let distances = get_orderable_distances(&dominated);
         assert_eq!(
@@ -147,16 +147,16 @@ mod tests {
     }
 
     #[test]
-    fn test_ensure_archive_size_extend() {
-        test_ensure_archive_size(5);
+    fn selection_ensure_archive_size_extend() {
+        selection_ensure_archive_size(5);
     }
 
     #[test]
-    fn test_ensure_archive_size_truncate() {
-        test_ensure_archive_size(2);
+    fn selection_ensure_archive_size_truncate() {
+        selection_ensure_archive_size(2);
     }
 
-    fn test_ensure_archive_size(archive_max: usize) {
+    fn selection_ensure_archive_size(archive_max: usize) {
         let dominated = mocks::get_dominated();
         let mut non_dominated = mocks::get_non_dominated();
         ensure_archive_size(dominated, &mut non_dominated, archive_max);
@@ -164,14 +164,14 @@ mod tests {
     }
 
     #[test]
-    fn test_get_closest() {
+    fn selection_get_closest() {
         let distances = mocks::get_sorted_distances();
         let closest = get_closest(&distances);
         assert_eq!(closest, &distances[0]);
     }
 
     #[test]
-    fn test_get_closest_with_tiebreak() {
+    fn selection_get_closest_with_tiebreak() {
         let mut distances = mocks::get_distances_with_tie();
         distances.sort_by(|a, b| a.value.partial_cmp(&b.value).unwrap());
         let closest = get_closest(&distances);

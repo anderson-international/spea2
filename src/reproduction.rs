@@ -4,7 +4,7 @@ use crate::{crossover, mutation};
 extern crate itermore;
 use rand::Rng;
 
-pub fn reproduce(model: &mut Model, mutate:MutOp<'_>) {
+pub fn reproduce(model: &mut Model, mutate: MutOp<'_>) {
     select_mating_pool(model);
     crossover::neighbourhood_crossover(model);
     mutation::mutate(model, mutate);
@@ -14,7 +14,6 @@ pub fn reproduce(model: &mut Model, mutate:MutOp<'_>) {
 fn select_mating_pool(model: &mut Model) {
     let mut rng = rand::thread_rng();
     let len = model.archive.len();
-
     for _ in 0..*POPULATION_COUNT {
         let i = rng.gen_range(0..len) as usize;
         let mut j = rng.gen_range(0..len) as usize;

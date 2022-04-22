@@ -38,7 +38,7 @@ fn model_init(population_count: usize, archive_count: usize, mating_pool_count: 
     model
 }
 
-pub fn get_model() -> Model {
+pub fn get_model_basic() -> Model {
     let mut model = model_init(2, 1, 0);
     model.population[0].values = vec![0.0, 0.0];
     model.population[1].values = vec![4.0, 0.0];
@@ -47,7 +47,7 @@ pub fn get_model() -> Model {
 }
 
 pub fn get_model_with_fitness() -> Model {
-    let mut model = get_model();
+    let mut model = get_model_basic();
     model.population[0].fitness = 0.1;
     model.population[1].fitness = 1.5;
     model.archive[0].fitness = 0.9;
@@ -188,11 +188,10 @@ impl Spea2Model for MockSpea2Model {
     }
 
     fn get_mutation_operator(&self) -> MutOp<'_> {
-        let mut_op = move |model: &mut Model, index: usize| -> ModelItem {
+        let mut_op = move |objectives: &[Objective], item: &mut ModelItem| {
             let mut rng = rand::thread_rng();
-            let mut item = model.mating_pool[index].clone();
-            let i = rng.gen_range(0..model.objectives.len());
-            let Objective { min, max, .. } = model.objectives[i];
+            let i = rng.gen_range(0..objectives.len());
+            let Objective { min, max, .. } = objectives[i];
 
             loop {
                 item.values[i] = rng.gen_range(min..=max);
@@ -200,7 +199,6 @@ impl Spea2Model for MockSpea2Model {
                     break;
                 }
             }
-            item
         };
         Box::new(mut_op)
     }
