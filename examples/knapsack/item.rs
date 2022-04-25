@@ -9,6 +9,11 @@ pub struct Item {
     pub weight: f32,
     pub value: f32,
 }
+impl Item {
+    pub fn new(weight: f32, value: f32) -> Self {
+        Self { weight, value }
+    }
+}
 
 #[derive(Debug, Clone)]
 pub struct ItemPool {
@@ -24,10 +29,9 @@ impl ItemPool {
 
     pub fn rnd() -> Item {
         let mut rng = rand::thread_rng();
-        Item {
-            weight: rng.gen_range(1.0..MAX_WEIGHT),
-            value: rng.gen_range(1.0..MAX_VALUE),
-        }
+        Item::new(
+            rng.gen_range(1.0..MAX_WEIGHT),
+            rng.gen_range(1.0..MAX_VALUE),
+        )
     }
 }
-

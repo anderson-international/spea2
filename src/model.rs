@@ -5,7 +5,7 @@ pub trait Spea2Model {
     fn get_mutation_operator(&mut self) -> MutationOperator<'_>;
 }
 
-#[derive(Debug, Default)]
+#[derive(Debug, Default, Clone)]
 pub struct Model {
     pub objectives: Vec<Objective>,
     pub population: Vec<ModelItem>,

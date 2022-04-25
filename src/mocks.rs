@@ -128,11 +128,11 @@ pub struct MockCustomData {
     pub value: f32,
 }
 impl MockCustomData {
-    fn increment(&mut self) {
-        self.value +=1.0;
+    pub fn update(&mut self) {
+        let mut rng = rand::thread_rng();
+        self.value = rng.gen_range(0.0..10.0);
     }
 }
-
 #[derive(Debug)]
 pub struct MockSpea2Model {
     pub custom_data: Vec<MockCustomData>,
@@ -149,10 +149,10 @@ impl Spea2Model for MockSpea2Model {
             let Objective { min, max, .. } = objectives[i];
             let index = item.custom_data_index.unwrap();
             let custom_data_item = self.custom_data.get_mut(index).unwrap();
-            custom_data_item.increment();
-            item.values[i] = rng.gen_range(min..=max-custom_data_item.value) + custom_data_item.value
+            custom_data_item.update();
+            item.values[i] =
+                rng.gen_range(min..=max - custom_data_item.value) + custom_data_item.value
         };
         Box::new(mut_op)
     }
 }
-

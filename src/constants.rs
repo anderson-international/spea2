@@ -7,3 +7,4 @@ lazy_static! {
     pub static ref GENERATION_COUNT: usize = 1000;
     pub static ref NEIGHBOURHOOD_SIZE: usize = 10;
 }
+

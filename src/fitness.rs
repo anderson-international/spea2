@@ -97,7 +97,7 @@ mod tests {
     fn fitness_dominators() {
         let mut model = mocks::get_model_basic();
         let (_, dominators, _) = set_fitness(&mut model);
-        println!("{:?}", dominators[0]);
+
         assert_eq!(dominators[0], vec![]);
         assert_eq!(dominators[1], vec![]);
         assert_eq!(dominators[2], [1]);
