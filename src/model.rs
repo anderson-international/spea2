@@ -1,12 +1,11 @@
-pub type MutOp<'a> = Box<dyn Fn(&[Objective], &mut ModelItem) + 'a>;
+pub type MutationOperator<'a> = Box<dyn FnMut(&[Objective], &mut ModelItem) + 'a>;
 
 pub trait Spea2Model {
     fn get_model(&self) -> Model;
-    fn get_mutation_operator(&self) -> MutOp<'_>;
-    fn is_item_feasible(&self, item: &ModelItem) -> bool;
+    fn get_mutation_operator(&mut self) -> MutationOperator<'_>;
 }
 
-#[derive(Debug)]
+#[derive(Debug, Default)]
 pub struct Model {
     pub objectives: Vec<Objective>,
     pub population: Vec<ModelItem>,
@@ -24,17 +23,6 @@ impl Model {
         index
     }
 }
-impl Default for Model {
-    fn default() -> Self {
-        Self {
-            objectives: Vec::new(),
-            population: Vec::new(),
-            archive: Vec::new(),
-            mating_pool: Vec::new(),
-            objective_sort_index: 0,
-        }
-    }
-}
 #[derive(Debug, Clone)]
 pub struct Objective {
     pub name: String,
@@ -43,17 +31,19 @@ pub struct Objective {
     pub max: f32,
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Default, Clone)]
 pub struct ModelItem {
     pub values: Vec<f32>,
     pub fitness: f32,
+    pub custom_data_index: Option<usize>,
 }
 
 impl ModelItem {
-    pub fn new(values: Vec<f32>) -> Self {
+    pub fn new(values: Vec<f32>, fitness: f32, custom_data_index: Option<usize>) -> Self {
         Self {
             values,
-            fitness: 0.0,
+            fitness,
+            custom_data_index,
         }
     }
 }
@@ -63,6 +53,12 @@ pub struct Distance {
     pub from: usize,
     pub to: usize,
     pub value: f32,
+}
+
+impl Distance {
+    pub fn new(from: usize, to: usize, value: f32) -> Self {
+        Self { from, to, value }
+    }
 }
 
 #[derive(Debug, Clone)]

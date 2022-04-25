@@ -1,8 +1,7 @@
-use rand::Rng;
-use spea2::model::{Direction, Model, ModelItem, Objective, Spea2Model};
-
 use crate::item::{Item, ItemPool};
 use lazy_static::lazy_static;
+use rand::{prelude::SliceRandom, Rng};
+use spea2::model::{Direction, Model, ModelItem, MutationOperator, Objective, Spea2Model};
 
 lazy_static! {
     pub static ref SACK_COUNT: usize = 10;
@@ -23,18 +22,26 @@ impl Sack {
             items: vec![],
         }
     }
-    pub fn add(&mut self, item: Item) {
+
+    pub fn item_add(&mut self, item: Item) {
         self.items.push(item);
         self.weight += item.weight;
         self.value += item.value;
     }
 
-    pub fn update(&mut self) {
-        self.weight = 0.0;
-        self.value = 0.0;
-        for item in self.items.iter() {
-            self.weight += item.weight;
-            self.value += item.value;
+    pub fn item_remove(&mut self, index: usize) {
+        let item = self.items.swap_remove(index);
+        self.weight -= item.weight;
+        self.value -= item.value;
+    }
+
+    pub fn fill(&mut self, item_pool: &mut ItemPool) {
+        item_pool.items.shuffle(&mut rand::thread_rng());
+        for item in item_pool.items.iter() {
+            if self.weight + item.weight > *SACK_MAX_WEIGHT {
+                continue;
+            }
+            self.item_add(*item);
         }
     }
 }
@@ -47,32 +54,18 @@ pub struct SackPool {
 
 impl SackPool {
     pub fn new() -> Self {
-        let mut rng = rand::thread_rng();
         let item_pool = ItemPool::new();
-        let mut sp = Self {
+        Self {
             item_pool,
             sacks: vec![],
-        };
-
-        sp.sacks = (0..*SACK_COUNT)
-            .map(|_| {
-                let mut items = sp.item_pool.items.clone();
-                let mut len = items.len();
-                let mut sack = Sack::new();
-                while sack.weight < *SACK_MAX_WEIGHT && len > 0 {
-                    let index = rng.gen_range(0..len) as usize;
-                    let item = items[index];
-                    if sack.weight + item.weight >= *SACK_MAX_WEIGHT {
-                        break;
-                    }
-                    sack.add(item);
-                    items.remove(index);
-                    len -= 1;
-                }
-                sack
-            })
-            .collect();
-        sp
+        }
+    }
+    pub fn fill(&mut self) {
+        for _ in 0..*SACK_COUNT {
+            let mut sack = Sack::new();
+            sack.fill(&mut self.item_pool);
+            self.sacks.push(sack);
+        }
     }
 }
 
@@ -96,17 +89,23 @@ impl Spea2Model for SackPool {
         model.population = self
             .sacks
             .iter()
-            .map(|sack| ModelItem::new(vec![sack.value, sack.weight]))
+            .enumerate()
+            .map(|(index, sack)| ModelItem::new(vec![sack.value, sack.weight], 0.0, Some(index)))
             .collect();
         model
     }
 
+    fn get_mutation_operator(&mut self) -> MutationOperator<'_> {
+        let mut_op = move |_: &[Objective], item: &mut ModelItem| {
+            let mut rng = rand::thread_rng();
+            let sack_index = item.custom_data_index.unwrap();
+            let item_index = rng.gen_range(0..self.sacks.len());
+            let sack = self.sacks.get_mut(sack_index).unwrap();
 
-    fn get_mutation_operator(&self) -> spea2::model::MutOp<'_> {
-        todo!()
-    }
-
-    fn is_item_feasible(&self, item: &ModelItem) -> bool {
-        todo!()
+            sack.item_remove(item_index);
+            sack.fill(&mut self.item_pool);
+            item.values = vec![sack.value, sack.weight];
+        };
+        Box::new(mut_op)
     }
 }

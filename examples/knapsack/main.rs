@@ -2,17 +2,21 @@ mod item;
 mod sack;
 
 use sack::SackPool;
+use spea2::model::Spea2Model;
 use std::time::Instant;
 
 fn main() {
-    let sack_pool = SackPool::new();
+    let mut sack_pool = SackPool::new();
+    sack_pool.fill();
 
+    let mut model = sack_pool.get_model();
+    let mut mutation = sack_pool.get_mutation_operator();
     let start = Instant::now();
 
-    let model = spea2::evolve(sack_pool);
+    let model = spea2::evolve(&mut model, &mut mutation);
 
-    let duration = start.elapsed();
+    let elapsed = start.elapsed();
 
-    println!("duration: {:?}", duration);
+    println!("duration: {:?}", elapsed);
     println!("{:?}", model);
 }

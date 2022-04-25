@@ -1,13 +1,12 @@
 use crate::constants::POPULATION_COUNT;
-use crate::model::{Model, MutOp};
+use crate::model::{Model, MutationOperator};
 use crate::{crossover, mutation};
-extern crate itermore;
 use rand::Rng;
 
-pub fn reproduce(model: &mut Model, mutate: MutOp<'_>) {
+pub fn reproduce(model: &mut Model, mutation: &mut MutationOperator) {
     select_mating_pool(model);
     crossover::neighbourhood_crossover(model);
-    mutation::mutate(model, mutate);
+    mutation::mutate(model, mutation);
     set_next_population(model);
 }
 
@@ -51,7 +50,7 @@ mod tests {
 
     #[test]
     fn reproduction_set_next_population() {
-        let mut model = mocks::get_model_for_reproduction();
+        let mut model = mocks::get_model_with_mating_pool();
 
         assert_eq!(model.population.len(), 0);
         assert_eq!(model.mating_pool.len(), 100);

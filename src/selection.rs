@@ -31,17 +31,22 @@ fn ensure_archive_size(
 ) -> Vec<Distance> {
     let nd_len = non_dominated.len();
     let mut distances: Vec<Distance> = vec![];
-    if nd_len < archive_max {
-        dominated.sort_by(|a, b| a.fitness.partial_cmp(&b.fitness).unwrap());
-        dominated.truncate(archive_max - nd_len);
-        non_dominated.extend(dominated);
-    } else if nd_len > archive_max {
-        while non_dominated.len() > archive_max {
-            distances = get_orderable_distances(&non_dominated);
-            distances.sort_by(|a, b| a.value.partial_cmp(&b.value).unwrap());
-            let closest = get_closest(&distances);
-            non_dominated.remove(closest.from);
+
+    match nd_len.cmp(&archive_max) {
+        std::cmp::Ordering::Less => {
+            dominated.sort_by(|a, b| a.fitness.partial_cmp(&b.fitness).unwrap());
+            dominated.truncate(archive_max - nd_len);
+            non_dominated.extend(dominated);
         }
+        std::cmp::Ordering::Greater => {
+            while non_dominated.len() > archive_max {
+                distances = get_orderable_distances(non_dominated);
+                distances.sort_by(|a, b| a.value.partial_cmp(&b.value).unwrap());
+                let closest = get_closest(&distances);
+                non_dominated.remove(closest.from);
+            }
+        }
+        std::cmp::Ordering::Equal => (),
     }
     distances
 }

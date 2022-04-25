@@ -24,7 +24,7 @@ fn sort_pool_by_objective(model: &mut Model) {
         .sort_by(|a, b| a.values[i].partial_cmp(&b.values[i]).unwrap());
 }
 
-fn neighbourhood_shuffle<'a>(model: &'a mut Model, rng: &mut ThreadRng) {
+fn neighbourhood_shuffle(model: &'_ mut Model, rng: &mut ThreadRng) {
     let pool = model.mating_pool.as_mut_slice();
     for i in 0..pool.len() / *NEIGHBOURHOOD_SIZE {
         let start = i * *NEIGHBOURHOOD_SIZE;
@@ -36,7 +36,7 @@ fn neighbourhood_shuffle<'a>(model: &'a mut Model, rng: &mut ThreadRng) {
 fn perform_crossover(p1: &mut ModelItem, p2: &mut ModelItem, split_index: usize) {
     let clone1 = p1.values.clone();
     let clone2 = p2.values.clone();
-    
+
     let (p1_left, p1_right) = clone1.split_at(split_index);
     let (p2_left, p2_right) = clone2.split_at(split_index);
 
@@ -51,7 +51,7 @@ mod tests {
 
     #[test]
     fn crossover_next_objective_sort_index() {
-        let mut model = mocks::get_model_for_reproduction();
+        let mut model = mocks::get_model_with_mating_pool();
 
         let mut sort_index = model.next_objective_sort_index();
         assert_eq!(sort_index, 0);
@@ -66,7 +66,7 @@ mod tests {
     #[test]
     fn crossover_sort_pool_by_objective() {
         let mut rng = rand::thread_rng();
-        let mut model = mocks::get_model_for_reproduction();
+        let mut model = mocks::get_model_with_mating_pool();
         model.mating_pool.shuffle(&mut rng);
 
         sort_pool_by_objective(&mut model);
@@ -82,7 +82,7 @@ mod tests {
 
     #[test]
     fn crossover_neighbourhood_shuffle() {
-        let mut model = mocks::get_model_for_reproduction();
+        let mut model = mocks::get_model_with_mating_pool();
         let mut rng = rand::thread_rng();
         let sort_index = 0;
 
@@ -103,7 +103,7 @@ mod tests {
 
     #[test]
     fn crossover_perform_crossover() {
-        let model = mocks::get_model_for_reproduction();
+        let model = mocks::get_model_with_mating_pool();
         let split_index = 1;
 
         let mut p1 = model.mating_pool[0].clone();

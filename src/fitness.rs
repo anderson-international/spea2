@@ -1,5 +1,3 @@
-use core::prelude;
-
 use crate::model::{Direction, Model, ModelItem};
 use quickersort::sort_floats;
 
@@ -81,7 +79,7 @@ pub fn set_fitness(model: &mut Model) -> (Vec<Vec<f32>>, Vec<Vec<usize>>, Vec<f3
 mod tests {
     use super::*;
 
-    use crate::{mocks, model::Spea2Model};
+    use crate::mocks;
 
     #[test]
     fn fitness_distances() {
