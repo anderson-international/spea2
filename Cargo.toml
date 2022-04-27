@@ -5,27 +5,29 @@ edition = "2021"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
-[[example]]
-name = "knapsack"
-
 [dependencies]
 rand = "0.8.5"
 quickersort = "3.0.1"
 criterion = "0.3"
 lazy_static = "1.4.0"
 itermore = "0.2.0"
-piston = "0.53.1"
-piston2d-graphics = "0.42.0"
-piston_window = "0.123.0"
 
 [lib]
 name="spea2"
 path = "src/spea2.rs"
 doctest = false
 
+[dev-dependencies]
+plotters = "0.3.1"
+piston = "0.53.1"
+piston2d-graphics = "0.42.0"
+piston_window = "0.123.0"
+
+[[example]]
+name = "knapsack"
+
 [[bench]]
 name = "bench_evolve"
 harness = false
-
 
 

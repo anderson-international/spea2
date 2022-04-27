@@ -66,13 +66,13 @@ impl Spea2Model for SackPool {
         let mut model = Model::default();
         model.objectives = vec![
             Objective {
-                name: "value".to_string(),
+                name: "sack value".to_string(),
                 direction: Direction::Maximised,
                 min: 0.0,
                 max: 255.0,
             },
             Objective {
-                name: "wieght".to_string(),
+                name: "sack wieght".to_string(),
                 direction: Direction::Minimised,
                 min: 0.0,
                 max: *SACK_MAX_WEIGHT,

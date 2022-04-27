@@ -13,6 +13,10 @@ pub struct Canvas<'a> {
     window: PistonWindow,
     model: Model,
     mutation: MutationOperator<'a>,
+    min_x: f32,
+    max_x: f32,
+    min_y: f32,
+    max_y: f32,
 }
 
 impl<'a> Canvas<'a> {
@@ -25,16 +29,28 @@ impl<'a> Canvas<'a> {
     * `min_distance` - if a pair of points are closer than the `min_distance`, then one of the points will be removed and replaced with a fresh random point
     */
     pub fn new(model: Model, mutation: MutationOperator<'a>) -> Self {
-        let window: PistonWindow = WindowSettings::new("spea2-knapsack", [0, 0])
+        let window: PistonWindow = WindowSettings::new("spea2-knapsack", [1024, 768])
             .exit_on_esc(true)
-            .fullscreen(true)
             .build()
             .unwrap();
-
+        let Objective {
+            min: min_x,
+            max: max_x,
+            ..
+        } = model.objectives[0];
+        let Objective {
+            min: min_y,
+            max: max_y,
+            ..
+        } = model.objectives[1];
         Self {
             window,
             model,
             mutation,
+            min_x,
+            max_x,
+            min_y,
+            max_y,
         }
     }
 
@@ -42,6 +58,7 @@ impl<'a> Canvas<'a> {
     Begins the decluster loop by listening for render and update window events.
     */
     pub fn show(&mut self) {
+        println!("{:?}", self.model.objectives);
         while let Some(e) = self.window.next() {
             if let Some(args) = e.render_args() {
                 self.render(&e, args);
@@ -54,25 +71,15 @@ impl<'a> Canvas<'a> {
     }
 
     fn render(&mut self, e: &piston::Event, args: RenderArgs) {
-        let Objective {
-            min: x_min,
-            max: x_max,
-            ..
-        } = self.model.objectives[0];
-        let Objective {
-            min: y_min,
-            max: y_max,
-            ..
-        } = self.model.objectives[1];
-
-        let items = &self.model.archive;
         self.window.draw_2d(e, |c, gl, _| {
             clear(color::BLACK, gl);
-            for item in items {
-                let x = ((item.values[0] - x_min) / (x_max - x_min)) as f64 * args.window_size[0];
-                let y = ((item.values[1] - y_min) / (y_max - y_min)) as f64 * args.window_size[1];
+            self.model.archive.iter().for_each(|item| {
+                let x = ((item.values[0] - self.min_x) / (self.max_x - self.min_y)) as f64
+                    * args.window_size[0];
+                let y = ((item.values[1] - self.min_y) / (self.max_y - self.min_y)) as f64
+                    * args.window_size[1];
                 rectangle(color::GREEN, [x, y, 5.0, 5.0], c.transform, gl);
-            }
+            })
         });
     }
 
