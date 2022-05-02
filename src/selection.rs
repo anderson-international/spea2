@@ -3,7 +3,7 @@ use crate::model::{Distance, Model, ModelItem};
 
 pub fn apply_selection(model: &mut Model) {
     let (dominated, mut non_dominated) = drain_model_by_dominance(model);
-    ensure_archive_size(dominated, &mut non_dominated, *ARCHIVE_MAX);
+    ensure_archive_size(dominated, &mut non_dominated, ARCHIVE_MAX);
     model.archive = non_dominated;
 }
 

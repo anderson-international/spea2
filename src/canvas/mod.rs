@@ -3,10 +3,14 @@ extern crate piston;
 extern crate piston_window;
 extern crate rand;
 
-use graphics::{clear, rectangle};
-use piston::{RenderArgs, RenderEvent, UpdateEvent};
+use graphics::{
+    clear, rectangle,
+    types::{self, Color},
+};
+use piston::{Button, Input, Key, PressEvent, RenderArgs, RenderEvent, UpdateEvent};
 use piston_window::{color, PistonWindow, WindowSettings};
-use spea2::model::{Model, MutationOperator, Objective};
+
+use crate::model::{Model, ModelItem, MutationOperator, Objective};
 
 /// The drawing surface and piston window used to display the set of points.
 pub struct Canvas<'a> {
@@ -20,14 +24,6 @@ pub struct Canvas<'a> {
 }
 
 impl<'a> Canvas<'a> {
-    /**
-    Returns a new canvas
-
-    # Arguments
-
-    * `point_count` - the number of points in the set
-    * `min_distance` - if a pair of points are closer than the `min_distance`, then one of the points will be removed and replaced with a fresh random point
-    */
     pub fn new(model: Model, mutation: MutationOperator<'a>) -> Self {
         let window: PistonWindow = WindowSettings::new("spea2-knapsack", [1024, 768])
             .exit_on_esc(true)
@@ -54,36 +50,42 @@ impl<'a> Canvas<'a> {
         }
     }
 
-    /**
-    Begins the decluster loop by listening for render and update window events.
-    */
     pub fn show(&mut self) {
-        println!("{:?}", self.model.objectives);
         while let Some(e) = self.window.next() {
             if let Some(args) = e.render_args() {
                 self.render(&e, args);
             }
-
-            if e.update_args().is_some() {
+            if let Some(args) = e.update_args() {
+                // self.update();
+            }
+            if let Some(Button::Keyboard(Key::Space)) = e.press_args() {
                 self.update();
             }
         }
     }
 
     fn render(&mut self, e: &piston::Event, args: RenderArgs) {
+        let width = args.window_size[0];
+        let height = args.window_size[1];
+
         self.window.draw_2d(e, |c, gl, _| {
             clear(color::BLACK, gl);
+
+            self.model.population.iter().for_each(|item| {
+                let x = ((item.values[0] - self.min_x) / (self.max_x - self.min_x)) as f64 * width;
+                let y = ((item.values[1] - self.min_y) / (self.max_y - self.min_y)) as f64 * height;
+                rectangle(color::RED, [x, y, 5.0, 5.0], c.transform, gl);
+            });
             self.model.archive.iter().for_each(|item| {
-                let x = ((item.values[0] - self.min_x) / (self.max_x - self.min_y)) as f64
-                    * args.window_size[0];
-                let y = ((item.values[1] - self.min_y) / (self.max_y - self.min_y)) as f64
-                    * args.window_size[1];
+                let x = ((item.values[0] - self.min_x) / (self.max_x - self.min_x)) as f64 * width;
+                let y = ((item.values[1] - self.min_y) / (self.max_y - self.min_y)) as f64 * height;
                 rectangle(color::GREEN, [x, y, 5.0, 5.0], c.transform, gl);
-            })
+            });
         });
     }
 
     fn update(&mut self) {
-        spea2::evolve(&mut self.model, &mut self.mutation)
+        println!("{:?}", "update");
+        super::evolve(&mut self.model, &mut self.mutation)
     }
 }

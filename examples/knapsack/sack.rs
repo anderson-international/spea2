@@ -1,12 +1,10 @@
 use crate::item::{Item, ItemPool};
-use lazy_static::lazy_static;
 use rand::{prelude::SliceRandom, Rng};
 use spea2::model::{Direction, Model, ModelItem, MutationOperator, Objective, Spea2Model};
 
-lazy_static! {
-    pub static ref SACK_COUNT: usize = 10;
-    pub static ref SACK_MAX_WEIGHT: f32 = 50.0;
-}
+const SACK_COUNT: usize = 10;
+const SACK_MAX_WEIGHT: f32 = 50.0;
+const SACK_MAX_VALUE: f32 = 50.0;
 
 #[derive(Debug, Clone, Default)]
 pub struct Sack {
@@ -30,7 +28,7 @@ impl Sack {
     pub fn fill(&mut self, item_pool: &mut ItemPool) {
         item_pool.items.shuffle(&mut rand::thread_rng());
         for item in item_pool.items.iter() {
-            if self.weight + item.weight > *SACK_MAX_WEIGHT {
+            if self.weight + item.weight > SACK_MAX_WEIGHT {
                 continue;
             }
             self.item_add(*item);
@@ -53,7 +51,7 @@ impl SackPool {
         }
     }
     pub fn fill(&mut self) {
-        for _ in 0..*SACK_COUNT {
+        for _ in 0..SACK_COUNT {
             let mut sack = Sack::default();
             sack.fill(&mut self.item_pool);
             self.sacks.push(sack);
@@ -63,39 +61,38 @@ impl SackPool {
 
 impl Spea2Model for SackPool {
     fn get_model(&self) -> Model {
-        let mut model = Model::default();
-        model.objectives = vec![
+        let objectives = vec![
             Objective {
                 name: "sack value".to_string(),
                 direction: Direction::Maximised,
                 min: 0.0,
-                max: 255.0,
+                max: SACK_MAX_VALUE,
             },
             Objective {
                 name: "sack wieght".to_string(),
                 direction: Direction::Minimised,
                 min: 0.0,
-                max: *SACK_MAX_WEIGHT,
+                max: SACK_MAX_WEIGHT,
             },
         ];
-        model.population = self
+        let population = self
             .sacks
             .iter()
             .enumerate()
-            .map(|(index, sack)| ModelItem::new(vec![sack.value, sack.weight], 0.0, Some(index)))
+            .map(|(index, sack)| ModelItem::new(vec![sack.value, sack.weight], Some(index)))
             .collect();
-        model
+        Model::new(objectives, population)
     }
 
     fn get_mutation_operator(&mut self) -> MutationOperator<'_> {
-        let mut_op = move |_: &[Objective], item: &mut ModelItem| {
+        let mut_op = move |model_item: &mut ModelItem| {
             let mut rng = rand::thread_rng();
-            let sack_index = item.custom_data_index.unwrap();
+            let sack_index = model_item.custom_data_index.unwrap();
             let sack = self.sacks.get_mut(sack_index).unwrap();
             let item_index = rng.gen_range(0..sack.items.len());
             sack.item_remove(item_index);
             sack.fill(&mut self.item_pool);
-            item.values = vec![sack.value, sack.weight];
+            model_item.values = vec![sack.value, sack.weight];
         };
         Box::new(mut_op)
     }
@@ -137,18 +134,18 @@ mod tests {
         let mut sack = Sack::default();
         let mut item_pool = ItemPool::new();
         sack.fill(&mut item_pool);
-        assert!(sack.weight <= *SACK_MAX_WEIGHT);
+        assert!(sack.weight <= SACK_MAX_WEIGHT);
         assert!(sack.value > 0.0);
-        assert!(sack.items.len() > 0);
+        assert!(!sack.items.is_empty());
     }
 
     #[test]
     fn sack_pool_fill() {
         let mut sack_pool = SackPool::new();
-        assert!(sack_pool.item_pool.items.len() > 0);
+        assert!(!sack_pool.item_pool.items.is_empty());
 
         sack_pool.fill();
-        assert!(sack_pool.sacks.len() > 0);
+        assert!(!sack_pool.sacks.is_empty());
     }
 
     #[test]
@@ -160,7 +157,7 @@ mod tests {
         let model_item = model.population.get_mut(0).unwrap();
         let before = model_item.values.clone();
 
-        mutatation(model.objectives.as_slice(), model_item);
+        mutatation(model_item);
 
         assert!(model_item.values != before);
 

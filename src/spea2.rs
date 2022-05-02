@@ -1,5 +1,6 @@
 use model::{Model, MutationOperator};
 
+pub mod canvas;
 pub mod mocks;
 pub mod model;
 
@@ -29,11 +30,15 @@ mod tests {
         let mut spea2_model = mocks::get_spea2model();
         let mut model = spea2_model.get_model();
         let mut mutation = spea2_model.get_mutation_operator();
+
+        //run once to create an archive
+        evolve(&mut model, &mut mutation);
+
         let before = model.clone();
 
         let start = Instant::now();
 
-        (0..20).for_each(|_| evolve(&mut model, &mut mutation));
+        (0..100).for_each(|_| evolve(&mut model, &mut mutation));
 
         println!("duration: {:?}", start.elapsed());
 
@@ -43,19 +48,28 @@ mod tests {
             .map(|item| item.values[0])
             .sum::<f32>()
             / before.archive.len() as f32;
+
         let avg_1_before = before
             .archive
             .iter()
             .map(|item| item.values[1])
             .sum::<f32>()
             / before.archive.len() as f32;
+
         let avg_0_after = model.archive.iter().map(|item| item.values[0]).sum::<f32>()
             / before.archive.len() as f32;
+
         let avg_1_after = model.archive.iter().map(|item| item.values[1]).sum::<f32>()
             / before.archive.len() as f32;
 
-        println!("Max: {} - {}", avg_0_before, avg_0_after);
-        println!("Min: {} - {}", avg_1_before, avg_1_after);
+        println!(
+            "{}: {} - {}",
+            model.objectives[0].name, avg_0_before, avg_0_after
+        );
+        println!(
+            "{}: {} - {}",
+            model.objectives[1].name, avg_1_before, avg_1_after
+        );
 
         match model.objectives[0].direction {
             Direction::Maximised => assert!(avg_0_after > avg_0_before),

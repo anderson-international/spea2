@@ -26,9 +26,9 @@ fn sort_pool_by_objective(model: &mut Model) {
 
 fn neighbourhood_shuffle(model: &'_ mut Model, rng: &mut ThreadRng) {
     let pool = model.mating_pool.as_mut_slice();
-    for i in 0..pool.len() / *NEIGHBOURHOOD_SIZE {
-        let start = i * *NEIGHBOURHOOD_SIZE;
-        let end = start + *NEIGHBOURHOOD_SIZE;
+    for i in 0..pool.len() / NEIGHBOURHOOD_SIZE {
+        let start = i * NEIGHBOURHOOD_SIZE;
+        let end = start + NEIGHBOURHOOD_SIZE;
         pool[start..end].shuffle(rng);
     }
 }
@@ -88,7 +88,7 @@ mod tests {
 
         neighbourhood_shuffle(&mut model, &mut rng);
 
-        for i in 0..model.mating_pool.len() / *NEIGHBOURHOOD_SIZE {
+        for i in 0..model.mating_pool.len() / NEIGHBOURHOOD_SIZE {
             let start = i * 10;
             let end = start + 10;
             let neighbours = model.mating_pool[start..end]
@@ -106,15 +106,15 @@ mod tests {
         let model = mocks::get_model_with_mating_pool();
         let split_index = 1;
 
-        let mut p1 = model.mating_pool[0].clone();
-        let mut p2 = model.mating_pool[1].clone();
+        let before1 = &model.mating_pool[0];
+        let before2 = &model.mating_pool[1];
 
-        assert_eq!(p1.values, vec![0.0, 100.0]);
-        assert_eq!(p2.values, vec![1.0, 99.0]);
+        let mut after1 = before1.clone();
+        let mut after2 = before2.clone();
 
-        perform_crossover(&mut p1, &mut p2, split_index);
+        perform_crossover(&mut after1, &mut after2, split_index);
 
-        assert_eq!(p1.values, vec![0.0, 99.0]);
-        assert_eq!(p2.values, vec![1.0, 100.0]);
+        assert_eq!(before1.values[1], after2.values[1]);
+        assert_eq!(before2.values[1], after1.values[1]);
     }
 }

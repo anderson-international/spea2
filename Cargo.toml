@@ -11,6 +11,10 @@ quickersort = "3.0.1"
 criterion = "0.3"
 lazy_static = "1.4.0"
 itermore = "0.2.0"
+plotters = "0.3.1"
+piston = "0.53.1"
+piston2d-graphics = "0.42.0"
+piston_window = "0.123.0"
 
 [lib]
 name="spea2"
@@ -18,13 +22,15 @@ path = "src/spea2.rs"
 doctest = false
 
 [dev-dependencies]
-plotters = "0.3.1"
-piston = "0.53.1"
-piston2d-graphics = "0.42.0"
-piston_window = "0.123.0"
+
 
 [[example]]
-name = "knapsack"
+name="knapsack" 
+test=true
+
+[[example]]
+name="basic" 
+test=true
 
 [[bench]]
 name = "bench_evolve"

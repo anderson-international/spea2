@@ -2,6 +2,7 @@ use crate::model::{Direction, Model, ModelItem};
 use quickersort::sort_floats;
 
 pub fn set_fitness(model: &mut Model) -> (Vec<Vec<f32>>, Vec<Vec<usize>>, Vec<f32>) {
+
     let mut union: Vec<&mut ModelItem> = model
         .population
         .iter_mut()
@@ -98,8 +99,8 @@ mod tests {
         let mut model = mocks::get_model_basic();
         let (_, dominators, _) = set_fitness(&mut model);
 
-        assert_eq!(dominators[0], vec![]);
-        assert_eq!(dominators[1], vec![]);
+        assert!(dominators[0].is_empty());
+        assert!(dominators[1].is_empty());
         assert_eq!(dominators[2], [1]);
     }
 

@@ -7,10 +7,9 @@ use crate::{
 
 pub fn mutate(model: &mut Model, mutation: &mut MutationOperator) {
     let mut rng = rand::thread_rng();
-    let objectives = model.objectives.as_slice();
     model.mating_pool.iter_mut().for_each(|item| {
-        if rng.gen::<f32>() < *MUTATION_RATE {
-            mutation(objectives, item);
+        if rng.gen::<f32>() < MUTATION_RATE {
+            mutation(item);
         }
     });
 }
@@ -28,7 +27,7 @@ mod tests {
         let item = model.mating_pool.get_mut(0).unwrap();
         let before = item.clone();
 
-        mutation(&model.objectives[..], item);
+        mutation(item);
 
         assert_ne!(before.values, item.values);
     }

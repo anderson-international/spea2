@@ -1,4 +1,4 @@
-pub type MutationOperator<'a> = Box<dyn FnMut(&[Objective], &mut ModelItem) + 'a>;
+pub type MutationOperator<'a> = Box<dyn FnMut(&mut ModelItem) + 'a>;
 
 pub trait Spea2Model {
     fn get_model(&self) -> Model;
@@ -11,9 +11,21 @@ pub struct Model {
     pub population: Vec<ModelItem>,
     pub archive: Vec<ModelItem>,
     pub mating_pool: Vec<ModelItem>,
+    pub population_size: usize,
     objective_sort_index: usize,
 }
 impl Model {
+
+    pub fn new(objectives: Vec<Objective>, population: Vec<ModelItem>) -> Self {
+        let population_size = population.len();
+        Self {
+            objectives,
+            population,
+            population_size,
+            ..Default::default()
+        }
+    }
+
     pub fn next_objective_sort_index(&mut self) -> usize {
         let index = self.objective_sort_index;
         self.objective_sort_index += 1;
@@ -39,10 +51,10 @@ pub struct ModelItem {
 }
 
 impl ModelItem {
-    pub fn new(values: Vec<f32>, fitness: f32, custom_data_index: Option<usize>) -> Self {
+    pub fn new(values: Vec<f32>, custom_data_index: Option<usize>) -> Self {
         Self {
             values,
-            fitness,
+            fitness: 0.0,
             custom_data_index,
         }
     }
