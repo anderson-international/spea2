@@ -8,7 +8,7 @@ use crate::{
 pub fn mutate(model: &mut Model, mutation: &mut MutationOperator) {
     let mut rng = rand::thread_rng();
     model.mating_pool.iter_mut().for_each(|item| {
-        if rng.gen::<f32>() < MUTATION_RATE {
+        if rng.gen_bool(MUTATION_RATE) {
             mutation(item);
         }
     });

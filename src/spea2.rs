@@ -38,16 +38,21 @@ mod tests {
 
         let start = Instant::now();
 
-        (0..100).for_each(|_| evolve(&mut model, &mut mutation));
+        (0..20).for_each(|_| evolve(&mut model, &mut mutation));
 
         println!("duration: {:?}", start.elapsed());
+
+        let before_archive_len = before.archive.len();
+        let after_archive_len = model.archive.len();
+
+        println!("Pop: {}", model.population_size);
 
         let avg_0_before = before
             .archive
             .iter()
             .map(|item| item.values[0])
             .sum::<f32>()
-            / before.archive.len() as f32;
+            / before_archive_len as f32;
 
         let avg_1_before = before
             .archive
@@ -56,11 +61,11 @@ mod tests {
             .sum::<f32>()
             / before.archive.len() as f32;
 
-        let avg_0_after = model.archive.iter().map(|item| item.values[0]).sum::<f32>()
-            / before.archive.len() as f32;
+        let avg_0_after =
+            model.archive.iter().map(|item| item.values[0]).sum::<f32>() / after_archive_len as f32;
 
-        let avg_1_after = model.archive.iter().map(|item| item.values[1]).sum::<f32>()
-            / before.archive.len() as f32;
+        let avg_1_after =
+            model.archive.iter().map(|item| item.values[1]).sum::<f32>() / after_archive_len as f32;
 
         println!(
             "{}: {} - {}",

@@ -3,7 +3,7 @@ use rand::Rng;
 
 pub const MOCK_MIN_OBJECTIVE_VALUE: f32 = 0.0;
 pub const MOCK_MAX_OBJECTIVE_VALUE: f32 = 100.0;
-pub const MOCK_POPULATION_COUNT: usize = 20;
+pub const MOCK_POPULATION_COUNT: usize = 50;
 
 fn get_objectives() -> Vec<Objective> {
     let objectives = vec![
@@ -59,7 +59,7 @@ pub fn get_model_with_fitness() -> Model {
 
 pub fn get_model_with_mating_pool() -> Model {
     let objectives = get_objectives();
-    let population = vec![];
+    let population = get_rnd_model_item_vec(&objectives);
     let mut model = Model::new(objectives, population);
     model.mating_pool = (0..MOCK_POPULATION_COUNT)
         .map(|i| {
@@ -144,7 +144,23 @@ impl MockCustomData {
             values: vec![
                 rng.gen_range(MOCK_MIN_OBJECTIVE_VALUE..MOCK_MAX_OBJECTIVE_VALUE),
                 rng.gen_range(MOCK_MIN_OBJECTIVE_VALUE..MOCK_MAX_OBJECTIVE_VALUE),
-            ]
+            ],
+        }
+    }
+
+    fn update(&mut self, objective_index: usize) {
+        let mut rng = rand::thread_rng();
+        let ten_percent = MOCK_MAX_OBJECTIVE_VALUE / 10.0;
+        if rng.gen_bool(0.5) {
+            self.values[objective_index] += ten_percent;
+            if self.values[objective_index] > MOCK_MAX_OBJECTIVE_VALUE {
+                self.values[objective_index] = MOCK_MAX_OBJECTIVE_VALUE;
+            }
+        } else {
+            self.values[objective_index] -= ten_percent;
+            if self.values[objective_index] < MOCK_MIN_OBJECTIVE_VALUE {
+                self.values[objective_index] = MOCK_MIN_OBJECTIVE_VALUE;
+            }
         }
     }
 }
@@ -176,8 +192,10 @@ impl Spea2Model for MockSpea2Model {
             let mut rng = rand::thread_rng();
             let index = item.custom_data_index.unwrap();
             let objective_index: usize = rng.gen_range(0..=1);
+
             let custom_data_item = self.custom_data.get_mut(index).unwrap();
-            custom_data_item.values[objective_index] = rng.gen_range(MOCK_MIN_OBJECTIVE_VALUE..MOCK_MAX_OBJECTIVE_VALUE);
+            custom_data_item.update(objective_index);
+
             item.values = custom_data_item.values.clone();
         };
         Box::new(mut_op)

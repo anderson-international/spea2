@@ -1,5 +1,5 @@
 use crate::model::{Direction, Model, ModelItem};
-use quickersort::sort_floats;
+
 
 pub fn set_fitness(model: &mut Model) -> (Vec<Vec<f32>>, Vec<Vec<usize>>, Vec<f32>) {
 
@@ -69,7 +69,7 @@ pub fn set_fitness(model: &mut Model) -> (Vec<Vec<f32>>, Vec<Vec<usize>>, Vec<f3
             raw_fitness += strengths[dominators[i][j]];
         }
         let mut sorted = distances[i].clone();
-        sort_floats(&mut sorted);
+        quickersort::sort_floats(&mut sorted);
         let density_estimate = 1.0 / sorted[kth];
         union[i].fitness = raw_fitness + density_estimate;
     }

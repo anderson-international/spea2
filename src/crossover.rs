@@ -1,4 +1,3 @@
-use crate::constants::NEIGHBOURHOOD_SIZE;
 use crate::model::{Model, ModelItem};
 extern crate itermore;
 use itermore::Itermore;
@@ -25,10 +24,11 @@ fn sort_pool_by_objective(model: &mut Model) {
 }
 
 fn neighbourhood_shuffle(model: &'_ mut Model, rng: &mut ThreadRng) {
+    let ns = model.neighbourhood_size;
     let pool = model.mating_pool.as_mut_slice();
-    for i in 0..pool.len() / NEIGHBOURHOOD_SIZE {
-        let start = i * NEIGHBOURHOOD_SIZE;
-        let end = start + NEIGHBOURHOOD_SIZE;
+    for i in 0..pool.len() / ns {
+        let start = i * ns;
+        let end = start + ns;
         pool[start..end].shuffle(rng);
     }
 }
@@ -88,9 +88,10 @@ mod tests {
 
         neighbourhood_shuffle(&mut model, &mut rng);
 
-        for i in 0..model.mating_pool.len() / NEIGHBOURHOOD_SIZE {
-            let start = i * 10;
-            let end = start + 10;
+        let ns = model.neighbourhood_size;
+        for i in 0..model.mating_pool.len() / ns {
+            let start = i * ns;
+            let end = start + ns;
             let neighbours = model.mating_pool[start..end]
                 .iter()
                 .map(|p| p.values[sort_index])

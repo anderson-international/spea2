@@ -12,6 +12,7 @@ pub struct Model {
     pub archive: Vec<ModelItem>,
     pub mating_pool: Vec<ModelItem>,
     pub population_size: usize,
+    pub neighbourhood_size: usize,
     objective_sort_index: usize,
 }
 impl Model {
@@ -22,6 +23,7 @@ impl Model {
             objectives,
             population,
             population_size,
+            neighbourhood_size: population_size / 10,
             ..Default::default()
         }
     }

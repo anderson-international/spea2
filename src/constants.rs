@@ -1,3 +1,1 @@
-pub const ARCHIVE_MAX: usize = 50;
-pub const NEIGHBOURHOOD_SIZE: usize = 10;
-pub const MUTATION_RATE: f32 = 0.06;
+pub const MUTATION_RATE: f64 = 0.06;

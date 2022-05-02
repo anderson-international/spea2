@@ -1,9 +1,8 @@
-use crate::constants::ARCHIVE_MAX;
 use crate::model::{Distance, Model, ModelItem};
 
 pub fn apply_selection(model: &mut Model) {
     let (dominated, mut non_dominated) = drain_model_by_dominance(model);
-    ensure_archive_size(dominated, &mut non_dominated, ARCHIVE_MAX);
+    ensure_archive_size(dominated, &mut non_dominated, model.population_size);
     model.archive = non_dominated;
 }
 
@@ -27,19 +26,19 @@ fn drain_model_by_dominance(model: &mut Model) -> (Vec<ModelItem>, Vec<ModelItem
 fn ensure_archive_size(
     mut dominated: Vec<ModelItem>,
     non_dominated: &mut Vec<ModelItem>,
-    archive_max: usize,
+    archive_size: usize,
 ) -> Vec<Distance> {
     let nd_len = non_dominated.len();
     let mut distances: Vec<Distance> = vec![];
 
-    match nd_len.cmp(&archive_max) {
+    match nd_len.cmp(&archive_size) {
         std::cmp::Ordering::Less => {
             dominated.sort_by(|a, b| a.fitness.partial_cmp(&b.fitness).unwrap());
-            dominated.truncate(archive_max - nd_len);
+            dominated.truncate(archive_size - nd_len);
             non_dominated.extend(dominated);
         }
         std::cmp::Ordering::Greater => {
-            while non_dominated.len() > archive_max {
+            while non_dominated.len() > archive_size {
                 distances = get_orderable_distances(non_dominated);
                 distances.sort_by(|a, b| a.value.partial_cmp(&b.value).unwrap());
                 let closest = get_closest(&distances);
@@ -117,8 +116,8 @@ mod tests {
         let (dominated, non_dominated) = drain_model_by_dominance(&mut model);
         assert!(dominated.iter().all(|item| item.fitness >= 1.0));
         assert!(non_dominated.iter().all(|item| item.fitness < 1.0));
-        assert_eq!(model.population.len(), 0);
-        assert_eq!(model.archive.len(), 0);
+        assert!(model.population.is_empty());
+        assert!(model.archive.is_empty());
     }
 
     #[test]

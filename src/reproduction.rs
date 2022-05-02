@@ -52,7 +52,6 @@ mod tests {
     fn reproduction_set_next_population() {
         let mut model = mocks::get_model_with_mating_pool();
 
-        assert!(model.population.is_empty());
         assert_eq!(model.mating_pool.len(), MOCK_POPULATION_COUNT);
 
         set_next_population(&mut model);

@@ -4,13 +4,12 @@ extern crate piston_window;
 extern crate rand;
 
 use graphics::{
-    clear, rectangle,
-    types::{self, Color},
+    clear, rectangle
 };
-use piston::{Button, Input, Key, PressEvent, RenderArgs, RenderEvent, UpdateEvent};
+use piston::{Button, Key, PressEvent, RenderArgs, RenderEvent, UpdateEvent};
 use piston_window::{color, PistonWindow, WindowSettings};
 
-use crate::model::{Model, ModelItem, MutationOperator, Objective};
+use crate::model::{Model, MutationOperator, Objective};
 
 /// The drawing surface and piston window used to display the set of points.
 pub struct Canvas<'a> {
@@ -55,7 +54,7 @@ impl<'a> Canvas<'a> {
             if let Some(args) = e.render_args() {
                 self.render(&e, args);
             }
-            if let Some(args) = e.update_args() {
+            if e.update_args().is_some() {
                 // self.update();
             }
             if let Some(Button::Keyboard(Key::Space)) = e.press_args() {
