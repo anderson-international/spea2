@@ -1,7 +1,4 @@
-use crate::model::Direction;
-use crate::model::Model;
-use crate::model::ModelItem;
-use quickersort::sort_floats;
+use crate::model::{Direction, Model, ModelItem};
 
 pub fn set_fitness(model: &mut Model) -> (Vec<Vec<f32>>, Vec<Vec<usize>>, Vec<f32>) {
     let mut union: Vec<&mut ModelItem> = model
@@ -9,6 +6,7 @@ pub fn set_fitness(model: &mut Model) -> (Vec<Vec<f32>>, Vec<Vec<usize>>, Vec<f3
         .iter_mut()
         .chain(model.archive.iter_mut())
         .collect();
+
     let len_union = union.len();
     let len_objectives = model.objectives.len();
     let kth = (len_union as f64).sqrt() as usize;
@@ -69,10 +67,11 @@ pub fn set_fitness(model: &mut Model) -> (Vec<Vec<f32>>, Vec<Vec<usize>>, Vec<f3
             raw_fitness += strengths[dominators[i][j]];
         }
         let mut sorted = distances[i].clone();
-        sort_floats(&mut sorted);
+        quickersort::sort_floats(&mut sorted);
         let density_estimate = 1.0 / sorted[kth];
         union[i].fitness = raw_fitness + density_estimate;
     }
+
     (distances, dominators, strengths)
 }
 
@@ -83,8 +82,8 @@ mod tests {
     use crate::mocks;
 
     #[test]
-    fn test_distances() {
-        let mut model = mocks::get_model();
+    fn fitness_distances() {
+        let mut model = mocks::get_model_basic();
         let (distances, _, _) = set_fitness(&mut model);
         assert_eq!(distances[0][1], 4.0);
         assert_eq!(distances[1][0], 4.0);
@@ -95,17 +94,18 @@ mod tests {
     }
 
     #[test]
-    fn test_dominators() {
-        let mut model = mocks::get_model();
+    fn fitness_dominators() {
+        let mut model = mocks::get_model_basic();
         let (_, dominators, _) = set_fitness(&mut model);
-        assert_eq!(dominators[0], []);
-        assert_eq!(dominators[1], []);
+
+        assert!(dominators[0].is_empty());
+        assert!(dominators[1].is_empty());
         assert_eq!(dominators[2], [1]);
     }
 
     #[test]
-    fn test_strengths() {
-        let mut model = mocks::get_model();
+    fn fitness_strengths() {
+        let mut model = mocks::get_model_basic();
         let (_, _, strengths) = set_fitness(&mut model);
         assert_eq!(strengths[0], 0.0);
         assert_eq!(strengths[1], 1.0);
@@ -113,8 +113,8 @@ mod tests {
     }
 
     #[test]
-    fn test_fitness() {
-        let mut model = mocks::get_model();
+    fn fitness_fitness() {
+        let mut model = mocks::get_model_basic();
         set_fitness(&mut model);
         assert_ne!(model.population[0].fitness, 0.0);
         assert_ne!(model.archive[0].fitness, 0.0);

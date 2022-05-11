@@ -1,58 +1,60 @@
-use crate::constants::{BIT_COUNT};
-use crate::model::{Model, ModelItem};
-extern crate itermore;
 use rand::Rng;
 
+use crate::{
+    constants::MUTATION_RATE,
+    model::{Model, MutationOperator},
+};
 
-pub fn mutate(model: &mut Model) {
+pub fn mutate(model: &mut Model, mutation: &mut MutationOperator) {
     let mut rng = rand::thread_rng();
-
+    let objectives = &model.objectives;
     model.mating_pool.iter_mut().for_each(|item| {
-        let r = rng.gen_range(0f32..1f32);
-        if r < 0.06 {
-            perform_mutation(item);
+        if rng.gen_bool(MUTATION_RATE) {
+            mutation(objectives, item);
         }
     });
 }
 
-fn perform_mutation(item: &mut ModelItem) {
-    let mut rng = rand::thread_rng();
-    let vi = rng.gen_range(0..item.values.len());
-    let mut bin = binary_encode(&item.values[vi]);
-    let i = rng.gen_range(0..bin.len());
-    if bin.as_bytes()[i] as char == '0' {
-        bin.replace_range(i..i + 1, "1");
-    } else {
-        bin.replace_range(i..i + 1, "0");
-    }
-    item.values[vi] = binary_decode(&bin);
-}
-
-fn binary_encode(value: &f32) -> String {
-    format!("{:0bit_count$b}", value.to_bits(), bit_count = *BIT_COUNT)
-}
-
-fn binary_decode(bin: &str) -> f32 {
-    f32::from_bits(u32::from_str_radix(&bin, 2).unwrap())
-}
-
 #[cfg(test)]
 mod tests {
-
-    use crate::mocks;
-
-    use super::*;
-
+    use crate::{
+        mocks::{self},
+        model::{Direction, Spea2Model},
+    };
     #[test]
     fn mutation_perform_mutation() {
-        let model = mocks::get_model_for_reproduction();
-        let mut item = model.mating_pool[0].clone();
-        let before = item.values.clone();
+        let mut spea2_model = mocks::get_spea2model();
+        let model = spea2_model.get_model();
+        let mut mutation = spea2_model.get_mutation_operator();
+        let objectives = &&model.objectives;
 
-        perform_mutation(&mut item);
+        (0..100).for_each(|count| {
+            model.population.iter().for_each(|item| {
+                let before = item.clone();
+                let mut after = item.clone();
 
-        assert_ne!(before, item.values);
+                mutation(objectives, &mut after);
 
-        println!("{:?}", item.values);
+                model.objectives.iter().for_each(|objective| {
+                    let b_val = before.values[objective.index];
+                    let a_val = item.values[objective.index];
+                    let dir = &objective.direction;
+                    match dir {
+                        Direction::Maximised => {
+                            if a_val < b_val {
+                                println!("{}. {:#?}: {} - {}", count, dir, b_val, a_val);
+                                panic!();
+                            }
+                        }
+                        Direction::Minimised => {
+                            if a_val > b_val {
+                                println!("{}. {:#?}: {} - {}", count, dir, b_val, a_val);
+                                panic!();
+                            }
+                        }
+                    }
+                });
+            });
+        });
     }
 }

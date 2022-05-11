@@ -1,200 +1,217 @@
-use rand::prelude::SliceRandom;
+use rand::Rng;
 
-use crate::constants;
-use crate::model::{Direction, Distance, Model, ModelItem, Objective, Spea2Model};
+use crate::model::{
+    Direction, Distance, Model, ModelItem, MutationOperator, Objective, Spea2Model,
+};
 
-fn model_init(population_count: usize, archive_count: usize, mating_pool_count: usize) -> Model {
-    let mut model = Model::default();
-    model.objectives = vec![
+pub const MOCK_MIN_OBJECTIVE_VALUE: f32 = 0.0;
+pub const MOCK_MAX_OBJECTIVE_VALUE: f32 = 100.0;
+pub const MOCK_POPULATION_COUNT: usize = 10;
+
+fn get_objectives() -> Vec<Objective> {
+    let objectives = vec![
         Objective {
+            name: "mock_objective_maximised".to_string(),
             direction: Direction::Maximised,
+            min: MOCK_MIN_OBJECTIVE_VALUE,
+            max: MOCK_MAX_OBJECTIVE_VALUE,
+            index: 0,
         },
         Objective {
+            name: "mock_objective_minimised".to_string(),
             direction: Direction::Minimised,
+            min: MOCK_MIN_OBJECTIVE_VALUE,
+            max: MOCK_MAX_OBJECTIVE_VALUE,
+            index: 1,
         },
     ];
-    for _ in 0..population_count {
-        model.population.push(ModelItem {
-            values: vec![0.0; 2],
-            fitness: 0.0,
-        });
-    }
-    for _ in 0..archive_count {
-        model.archive.push(ModelItem {
-            values: vec![0.0; 2],
-            fitness: 0.0,
-        });
-    }
-    for i in 0..mating_pool_count {
-        let v = i as f32;
-        let c = mating_pool_count as f32;
-        model.mating_pool.push(ModelItem {
-            values: vec![v, c - v],
-            fitness: 0.0,
-        });
-    }
-    model
+    objectives
+}
+pub fn get_rnd_model_item_vec(objectives: &[Objective]) -> Vec<ModelItem> {
+    let mut rng = rand::thread_rng();
+    (0..MOCK_POPULATION_COUNT)
+        .map(|_| {
+            ModelItem::new(
+                vec![
+                    rng.gen_range(0.0..objectives[0].max),
+                    rng.gen_range(0.0..objectives[1].max),
+                ],
+                Some(0),
+            )
+        })
+        .collect()
 }
 
-pub fn get_model() -> Model {
-    let mut model = model_init(2, 1, 0);
-    model.population[0].values = vec![0.0, 0.0];
-    model.population[1].values = vec![4.0, 0.0];
-    model.archive[0].values = vec![0.0, 3.0];
+pub fn get_sequential_model_item_vec() -> Vec<ModelItem> {
+    (0..=MOCK_POPULATION_COUNT)
+        .map(|i| {
+            ModelItem::new(
+                vec![MOCK_POPULATION_COUNT as f32 - i as f32, i as f32],
+                Some(0),
+            )
+        })
+        .collect()
+}
+
+pub fn get_model_basic() -> Model {
+    let objectives = get_objectives();
+    let custom_data_index = Some(0);
+    let population = vec![
+        ModelItem::new(vec![0.0, 0.0], custom_data_index),
+        ModelItem::new(vec![4.0, 0.0], custom_data_index),
+    ];
+    let mut model = Model::new(objectives, population);
+    model.archive = vec![ModelItem::new(vec![0.0, 3.0], custom_data_index)];
     model
 }
 
 pub fn get_model_with_fitness() -> Model {
-    let mut model = get_model();
+    let mut model = get_model_basic();
     model.population[0].fitness = 0.1;
     model.population[1].fitness = 1.5;
     model.archive[0].fitness = 0.9;
     model
 }
 
-pub fn get_model_for_reproduction() -> Model {
-    model_init(0, 0, 100)
+pub fn get_model_with_mating_pool() -> Model {
+    let objectives = get_objectives();
+    let population = get_rnd_model_item_vec(&objectives);
+    let mut model = Model::new(objectives, population);
+    model.mating_pool = (0..MOCK_POPULATION_COUNT)
+        .map(|i| {
+            let v = i as f32;
+            let c = MOCK_POPULATION_COUNT as f32;
+            ModelItem::new(vec![v, c - v], Some(0))
+        })
+        .collect();
+    model
 }
 
-pub fn get_model_for_mating_pool_selection() -> Model {
-    model_init(0, 100, 0)
+pub fn get_model_with_archive() -> Model {
+    let objectives = get_objectives();
+    let population = get_rnd_model_item_vec(&objectives);
+    let archive = get_sequential_model_item_vec();
+    let mut model = Model::new(objectives, population);
+    model.archive = archive;
+    model
+}
+
+pub fn get_model_item_with_fitness(values: Vec<f32>, fitness: f32) -> ModelItem {
+    let mut model_item = ModelItem::new(values, Some(0));
+    model_item.fitness = fitness;
+    model_item
 }
 
 pub fn get_dominated() -> Vec<ModelItem> {
-    let mut dominated: Vec<ModelItem> = vec![];
-
-    dominated.push(ModelItem {
-        values: vec![0.0, 0.0],
-        fitness: 0.1,
-    });
-    dominated.push(ModelItem {
-        values: vec![4.0, 0.0],
-        fitness: 0.2,
-    });
-    dominated.push(ModelItem {
-        values: vec![0.0, 3.0],
-        fitness: 0.3,
-    });
-    dominated
+    vec![
+        get_model_item_with_fitness(vec![0.0, 0.0], 0.1),
+        get_model_item_with_fitness(vec![4.0, 0.0], 0.2),
+        get_model_item_with_fitness(vec![0.0, 3.0], 0.3),
+    ]
 }
 
 pub fn get_non_dominated() -> Vec<ModelItem> {
-    let mut non_dominated: Vec<ModelItem> = vec![];
-
-    non_dominated.push(ModelItem {
-        values: vec![5.0, 0.0],
-        fitness: 1.0,
-    });
-    non_dominated.push(ModelItem {
-        values: vec![0.0, 12.0],
-        fitness: 1.1,
-    });
-    non_dominated.push(ModelItem {
-        values: vec![7.0, 0.0],
-        fitness: 1.2,
-    });
-    non_dominated.push(ModelItem {
-        values: vec![0.0, 24.0],
-        fitness: 1.3,
-    });
-
-    non_dominated
+    vec![
+        get_model_item_with_fitness(vec![5.0, 0.0], 1.0),
+        get_model_item_with_fitness(vec![0.0, 12.0], 1.1),
+        get_model_item_with_fitness(vec![7.0, 0.0], 1.2),
+        get_model_item_with_fitness(vec![0.0, 24.0], 1.3),
+    ]
 }
 
 pub fn get_sorted_distances() -> Vec<Distance> {
-    let mut distances: Vec<Distance> = vec![];
-
-    distances.push(Distance {
-        from: 0,
-        to: 1,
-        value: 1.0,
-    });
-
-    distances.push(Distance {
-        from: 0,
-        to: 2,
-        value: 1.0,
-    });
-    distances.push(Distance {
-        from: 0,
-        to: 3,
-        value: 3.0,
-    });
-    distances.push(Distance {
-        from: 1,
-        to: 2,
-        value: 4.0,
-    });
-    distances.push(Distance {
-        from: 1,
-        to: 3,
-        value: 5.0,
-    });
-    distances.push(Distance {
-        from: 3,
-        to: 2,
-        value: 6.0,
-    });
-
-    distances
+    vec![
+        Distance::new(0, 1, 1.0),
+        Distance::new(0, 2, 1.0),
+        Distance::new(0, 3, 3.0),
+        Distance::new(1, 2, 4.0),
+        Distance::new(1, 3, 5.0),
+        Distance::new(3, 2, 6.0),
+    ]
 }
 
 pub fn get_distances_with_tie() -> Vec<Distance> {
-    let mut distances: Vec<Distance> = vec![];
-
-    distances.push(Distance {
-        from: 0,
-        to: 1,
-        value: 1.0,
-    });
-
-    distances.push(Distance {
-        from: 0,
-        to: 2,
-        value: 2.0,
-    });
-    distances.push(Distance {
-        from: 0,
-        to: 3,
-        value: 4.0,
-    });
-    distances.push(Distance {
-        from: 1,
-        to: 2,
-        value: 3.0,
-    });
-    distances.push(Distance {
-        from: 1,
-        to: 3,
-        value: 1.0,
-    });
-    distances.push(Distance {
-        from: 3,
-        to: 2,
-        value: 5.0,
-    });
-    distances
+    vec![
+        Distance::new(0, 1, 1.0),
+        Distance::new(0, 2, 2.0),
+        Distance::new(0, 3, 4.0),
+        Distance::new(1, 2, 3.0),
+        Distance::new(1, 3, 1.0),
+        Distance::new(3, 2, 5.0),
+    ]
 }
 
+pub fn get_spea2model() -> MockSpea2Model {
+    MockSpea2Model {
+        custom_data: (0..MOCK_POPULATION_COUNT)
+            .map(|_| MockCustomData::default())
+            .collect(),
+    }
+}
+
+#[derive(Debug, Default)]
+pub struct MockCustomData {
+    pub values: Vec<f32>,
+}
+impl MockCustomData {
+    pub fn default() -> MockCustomData {
+        let mut rng = rand::thread_rng();
+        MockCustomData {
+            values: vec![
+                rng.gen_range(MOCK_MIN_OBJECTIVE_VALUE..MOCK_MAX_OBJECTIVE_VALUE),
+                rng.gen_range(MOCK_MIN_OBJECTIVE_VALUE..MOCK_MAX_OBJECTIVE_VALUE),
+            ],
+        }
+    }
+
+    fn update(&mut self, objective: &Objective) {
+        let ten_percent = objective.max / 10.0;
+        let i = objective.index;
+
+        match objective.direction {
+            Direction::Maximised => {
+                self.values[i] += ten_percent;
+                if self.values[i] > objective.max {
+                    self.values[i] = objective.max;
+                }
+            }
+            Direction::Minimised => {
+                self.values[i] -= ten_percent;
+                if self.values[i] < objective.min {
+                    self.values[i] = objective.min;
+                }
+            }
+        }
+    }
+}
 #[derive(Debug)]
-pub struct BenchModel {
-    pub model: Model,
+pub struct MockSpea2Model {
+    pub custom_data: Vec<MockCustomData>,
 }
-impl BenchModel {
-    pub fn new() -> Self {
-        let model = model_init(
-            *constants::POPULATION_COUNT_BENCH,
-            *constants::ARCHIVE_MAX_BENCH,
-            0,
-        );
-        Self { model }
+impl Spea2Model for MockSpea2Model {
+    fn get_model(&self) -> Model {
+        let objectives = get_objectives();
+        let population = self
+            .custom_data
+            .iter()
+            .enumerate()
+            .map(|(i, custom_data_item)| ModelItem::new(custom_data_item.values.clone(), Some(i)))
+            .collect();
+
+        Model::new(objectives, population)
     }
-}
-impl Spea2Model for BenchModel {
-    fn get_model(self) -> Model {
-        self.model
+
+    fn get_mutation_operator(&mut self) -> MutationOperator {
+        let mut_op = move |objectives: &[Objective], item: &mut ModelItem| {
+            let mut rng = rand::thread_rng();
+            let index = item.custom_data_index.unwrap();
+            let custom_data_item = self.custom_data.get_mut(index).unwrap();
+
+            let objective_index: usize = rng.gen_range(0..objectives.len());
+            custom_data_item.update(&objectives[objective_index]);
+
+            item.values = custom_data_item.values.clone();
+        };
+        Box::new(mut_op)
     }
-}
-pub fn spea2model_for_bench() -> BenchModel {
-    BenchModel::new()
 }

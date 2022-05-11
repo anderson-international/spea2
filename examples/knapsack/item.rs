@@ -1,13 +1,20 @@
 use rand::Rng;
 
-static MAX_WEIGHT: f32 = 25.0;
-static MAX_VALUE: f32 = 25.0;
-static POOL_SIZE: i32 = 25;
+const WEIGHT_MAX: f32 = 25.0;
+const WEIGHT_MIN: f32 = 5.0;
+const VALUE_MAX: f32 = 25.0;
+const VALUE_MIN: f32 = 5.0;
+const POOL_SIZE: i32 = 25;
 
 #[derive(Debug, Clone, Copy)]
 pub struct Item {
     pub weight: f32,
     pub value: f32,
+}
+impl Item {
+    pub fn new(weight: f32, value: f32) -> Self {
+        Self { weight, value }
+    }
 }
 
 #[derive(Debug, Clone)]
@@ -24,9 +31,9 @@ impl ItemPool {
 
     pub fn rnd() -> Item {
         let mut rng = rand::thread_rng();
-        Item {
-            weight: rng.gen_range(1.0..MAX_WEIGHT),
-            value: rng.gen_range(1.0..MAX_VALUE),
-        }
+        Item::new(
+            rng.gen_range(WEIGHT_MIN..WEIGHT_MAX),
+            rng.gen_range(VALUE_MIN..VALUE_MAX),
+        )
     }
 }
