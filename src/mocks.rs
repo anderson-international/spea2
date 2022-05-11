@@ -1,9 +1,12 @@
-use crate::model::*;
 use rand::Rng;
+
+use crate::model::{
+    Direction, Distance, Model, ModelItem, MutationOperator, Objective, Spea2Model,
+};
 
 pub const MOCK_MIN_OBJECTIVE_VALUE: f32 = 0.0;
 pub const MOCK_MAX_OBJECTIVE_VALUE: f32 = 100.0;
-pub const MOCK_POPULATION_COUNT: usize = 50;
+pub const MOCK_POPULATION_COUNT: usize = 10;
 
 fn get_objectives() -> Vec<Objective> {
     let objectives = vec![
@@ -12,12 +15,14 @@ fn get_objectives() -> Vec<Objective> {
             direction: Direction::Maximised,
             min: MOCK_MIN_OBJECTIVE_VALUE,
             max: MOCK_MAX_OBJECTIVE_VALUE,
+            index: 0,
         },
         Objective {
             name: "mock_objective_minimised".to_string(),
             direction: Direction::Minimised,
             min: MOCK_MIN_OBJECTIVE_VALUE,
             max: MOCK_MAX_OBJECTIVE_VALUE,
+            index: 1,
         },
     ];
     objectives
@@ -31,6 +36,17 @@ pub fn get_rnd_model_item_vec(objectives: &[Objective]) -> Vec<ModelItem> {
                     rng.gen_range(0.0..objectives[0].max),
                     rng.gen_range(0.0..objectives[1].max),
                 ],
+                Some(0),
+            )
+        })
+        .collect()
+}
+
+pub fn get_sequential_model_item_vec() -> Vec<ModelItem> {
+    (0..=MOCK_POPULATION_COUNT)
+        .map(|i| {
+            ModelItem::new(
+                vec![MOCK_POPULATION_COUNT as f32 - i as f32, i as f32],
                 Some(0),
             )
         })
@@ -74,7 +90,7 @@ pub fn get_model_with_mating_pool() -> Model {
 pub fn get_model_with_archive() -> Model {
     let objectives = get_objectives();
     let population = get_rnd_model_item_vec(&objectives);
-    let archive = get_rnd_model_item_vec(&objectives);
+    let archive = get_sequential_model_item_vec();
     let mut model = Model::new(objectives, population);
     model.archive = archive;
     model
@@ -148,18 +164,22 @@ impl MockCustomData {
         }
     }
 
-    fn update(&mut self, objective_index: usize) {
-        let mut rng = rand::thread_rng();
-        let ten_percent = MOCK_MAX_OBJECTIVE_VALUE / 10.0;
-        if rng.gen_bool(0.5) {
-            self.values[objective_index] += ten_percent;
-            if self.values[objective_index] > MOCK_MAX_OBJECTIVE_VALUE {
-                self.values[objective_index] = MOCK_MAX_OBJECTIVE_VALUE;
+    fn update(&mut self, objective: &Objective) {
+        let ten_percent = objective.max / 10.0;
+        let i = objective.index;
+
+        match objective.direction {
+            Direction::Maximised => {
+                self.values[i] += ten_percent;
+                if self.values[i] > objective.max {
+                    self.values[i] = objective.max;
+                }
             }
-        } else {
-            self.values[objective_index] -= ten_percent;
-            if self.values[objective_index] < MOCK_MIN_OBJECTIVE_VALUE {
-                self.values[objective_index] = MOCK_MIN_OBJECTIVE_VALUE;
+            Direction::Minimised => {
+                self.values[i] -= ten_percent;
+                if self.values[i] < objective.min {
+                    self.values[i] = objective.min;
+                }
             }
         }
     }
@@ -170,31 +190,25 @@ pub struct MockSpea2Model {
 }
 impl Spea2Model for MockSpea2Model {
     fn get_model(&self) -> Model {
-        let mut rng = rand::thread_rng();
         let objectives = get_objectives();
-        let population = (0..MOCK_POPULATION_COUNT)
-            .map(|i| {
-                ModelItem::new(
-                    vec![
-                        rng.gen_range(0.0..objectives[0].max),
-                        rng.gen_range(0.0..objectives[1].max),
-                    ],
-                    Some(i),
-                )
-            })
+        let population = self
+            .custom_data
+            .iter()
+            .enumerate()
+            .map(|(i, custom_data_item)| ModelItem::new(custom_data_item.values.clone(), Some(i)))
             .collect();
 
         Model::new(objectives, population)
     }
 
     fn get_mutation_operator(&mut self) -> MutationOperator {
-        let mut_op = move |item: &mut ModelItem| {
+        let mut_op = move |objectives: &[Objective], item: &mut ModelItem| {
             let mut rng = rand::thread_rng();
             let index = item.custom_data_index.unwrap();
-            let objective_index: usize = rng.gen_range(0..=1);
-
             let custom_data_item = self.custom_data.get_mut(index).unwrap();
-            custom_data_item.update(objective_index);
+
+            let objective_index: usize = rng.gen_range(0..objectives.len());
+            custom_data_item.update(&objectives[objective_index]);
 
             item.values = custom_data_item.values.clone();
         };

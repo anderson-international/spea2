@@ -1,4 +1,4 @@
-pub type MutationOperator<'a> = Box<dyn FnMut(&mut ModelItem) + 'a>;
+pub type MutationOperator<'a> = Box<dyn FnMut(&[Objective], &mut ModelItem) + 'a>;
 
 pub trait Spea2Model {
     fn get_model(&self) -> Model;
@@ -16,14 +16,13 @@ pub struct Model {
     objective_sort_index: usize,
 }
 impl Model {
-
     pub fn new(objectives: Vec<Objective>, population: Vec<ModelItem>) -> Self {
         let population_size = population.len();
         Self {
             objectives,
             population,
             population_size,
-            neighbourhood_size: population_size / 10,
+            neighbourhood_size: (population_size / 10) + (population_size % 10 != 0) as usize,
             ..Default::default()
         }
     }
@@ -36,13 +35,34 @@ impl Model {
         }
         index
     }
+
+    pub fn get_average_archive_values(&self) -> Vec<f32> {
+        let len = self.archive.len();
+        self.objectives
+            .iter()
+            .map(|objective| {
+                self.archive
+                    .iter()
+                    .map(|item| item.values[objective.index])
+                    .sum::<f32>()
+                    / len as f32
+            })
+            .collect()
+    }
+    
+    pub fn get_average_fitness(&self) -> f32 {
+        let len = self.archive.len();
+        self.archive.iter().map(|item| item.fitness).sum::<f32>() / len as f32
+    }
 }
+
 #[derive(Debug, Clone)]
 pub struct Objective {
     pub name: String,
     pub direction: Direction,
     pub min: f32,
     pub max: f32,
+    pub index: usize,
 }
 
 #[derive(Debug, Default, Clone)]
@@ -79,4 +99,34 @@ impl Distance {
 pub enum Direction {
     Maximised,
     Minimised,
+}
+
+#[cfg(test)]
+mod tests {
+    use crate::mocks::{self, MOCK_POPULATION_COUNT};
+
+    #[test]
+    fn model_next_objective_sort_index() {
+        let mut model = mocks::get_model_basic();
+
+        let mut sort_index = model.next_objective_sort_index();
+        assert_eq!(sort_index, 0);
+
+        sort_index = model.next_objective_sort_index();
+        assert_eq!(sort_index, 1);
+
+        sort_index = model.next_objective_sort_index();
+        assert_eq!(sort_index, 0);
+
+        sort_index = model.next_objective_sort_index();
+        assert_eq!(sort_index, 1);
+    }
+
+    #[test]
+    fn model_get_average_archive_values() {
+        let model = mocks::get_model_with_archive();
+        let average_values = model.get_average_archive_values();
+        let expected = MOCK_POPULATION_COUNT as f32 / 2.0;
+        assert_eq!(average_values, vec![expected, expected]);
+    }
 }

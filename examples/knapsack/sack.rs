@@ -67,12 +67,14 @@ impl Spea2Model for SackPool {
                 direction: Direction::Maximised,
                 min: 0.0,
                 max: SACK_MAX_VALUE,
+                index: 0,
             },
             Objective {
                 name: "sack wieght".to_string(),
                 direction: Direction::Minimised,
                 min: 0.0,
                 max: SACK_MAX_WEIGHT,
+                index: 1,
             },
         ];
         let population = self
@@ -85,7 +87,7 @@ impl Spea2Model for SackPool {
     }
 
     fn get_mutation_operator(&mut self) -> MutationOperator<'_> {
-        let mut_op = move |model_item: &mut ModelItem| {
+        let mut_op = move |_: &[Objective], model_item: &mut ModelItem| {
             let mut rng = rand::thread_rng();
             let sack_index = model_item.custom_data_index.unwrap();
             let sack = self.sacks.get_mut(sack_index).unwrap();
@@ -157,7 +159,7 @@ mod tests {
         let model_item = model.population.get_mut(0).unwrap();
         let before = model_item.values.clone();
 
-        mutatation(model_item);
+        mutatation(&model.objectives, model_item);
 
         assert!(model_item.values != before);
 

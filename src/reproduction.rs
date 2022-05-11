@@ -4,27 +4,30 @@ use rand::Rng;
 
 pub fn reproduce(model: &mut Model, mutation: &mut MutationOperator) {
     select_mating_pool(model);
-    crossover::neighbourhood_crossover(model);
-    mutation::mutate(model, mutation);
+    // crossover::neighbourhood_crossover(model);
+    // mutation::mutate(model, mutation);
     set_next_population(model);
 }
 
 fn select_mating_pool(model: &mut Model) {
-    let mut rng = rand::thread_rng();
-    let len = model.archive.len();
+    // let mut rng = rand::thread_rng();
+    // let len = model.archive.len();
 
-    for _ in 0..model.population_size {
-        let i = rng.gen_range(0..len) as usize;
-        let mut j = rng.gen_range(0..len) as usize;
-        while j == i {
-            j = rng.gen_range(0..len) as usize;
-        }
-        if model.archive[i].fitness <= model.archive[j].fitness {
-            model.mating_pool.push(model.archive[i].clone());
-        } else {
-            model.mating_pool.push(model.archive[j].clone());
-        }
-    }
+    // for _ in 0..model.population_size {
+    //     let i = rng.gen_range(0..len) as usize;
+    //     let mut j = rng.gen_range(0..len) as usize;
+    //     while j == i {
+    //         j = rng.gen_range(0..len) as usize;
+    //     }
+    //     if model.archive[i].fitness <= model.archive[j].fitness {
+    //         model.mating_pool.push(model.archive[i].clone());
+    //     } else {
+    //         model.mating_pool.push(model.archive[j].clone());
+    //     }
+    // }
+
+    model.mating_pool.clear();
+    model.mating_pool.append(&mut model.archive.clone());
 }
 
 fn set_next_population(model: &mut Model) {
@@ -49,7 +52,7 @@ mod tests {
     }
 
     #[test]
-    fn reproduction_set_next_population() {
+    fn model_set_next_population() {
         let mut model = mocks::get_model_with_mating_pool();
 
         assert_eq!(model.mating_pool.len(), MOCK_POPULATION_COUNT);

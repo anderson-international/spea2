@@ -50,20 +50,6 @@ mod tests {
     use crate::mocks;
 
     #[test]
-    fn crossover_next_objective_sort_index() {
-        let mut model = mocks::get_model_with_mating_pool();
-
-        let mut sort_index = model.next_objective_sort_index();
-        assert_eq!(sort_index, 0);
-
-        sort_index = model.next_objective_sort_index();
-        assert_eq!(sort_index, 1);
-
-        sort_index = model.next_objective_sort_index();
-        assert_eq!(sort_index, 0);
-    }
-
-    #[test]
     fn crossover_sort_pool_by_objective() {
         let mut rng = rand::thread_rng();
         let mut model = mocks::get_model_with_mating_pool();
@@ -107,15 +93,18 @@ mod tests {
         let model = mocks::get_model_with_mating_pool();
         let split_index = 1;
 
-        let before1 = &model.mating_pool[0];
-        let before2 = &model.mating_pool[1];
+        let before0 = &model.mating_pool[0];
+        let before1 = &model.mating_pool[1];
 
+        let mut after0 = before0.clone();
         let mut after1 = before1.clone();
-        let mut after2 = before2.clone();
 
-        perform_crossover(&mut after1, &mut after2, split_index);
+        perform_crossover(&mut after0, &mut after1, split_index);
 
-        assert_eq!(before1.values[1], after2.values[1]);
-        assert_eq!(before2.values[1], after1.values[1]);
+        assert_eq!(before0.values[0], before0.values[0]);
+        assert_eq!(after0.values[0], after0.values[0]);
+
+        assert_eq!(before0.values[1], after1.values[1]);
+        assert_eq!(before1.values[1], after0.values[1]);
     }
 }

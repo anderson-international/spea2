@@ -1,8 +1,6 @@
 use crate::model::{Direction, Model, ModelItem};
 
-
 pub fn set_fitness(model: &mut Model) -> (Vec<Vec<f32>>, Vec<Vec<usize>>, Vec<f32>) {
-
     let mut union: Vec<&mut ModelItem> = model
         .population
         .iter_mut()
@@ -73,6 +71,7 @@ pub fn set_fitness(model: &mut Model) -> (Vec<Vec<f32>>, Vec<Vec<usize>>, Vec<f3
         let density_estimate = 1.0 / sorted[kth];
         union[i].fitness = raw_fitness + density_estimate;
     }
+
     (distances, dominators, strengths)
 }
 

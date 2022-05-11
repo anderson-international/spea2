@@ -64,12 +64,14 @@ impl Spea2Model for BasicModel {
                 direction: Direction::Maximised,
                 min: MIN_STRENGTH as f32,
                 max: MAX_STRENGTH as f32,
+                index: 0,
             },
             Objective {
                 name: "wieght".to_string(),
                 direction: Direction::Minimised,
                 min: MIN_WEIGHT as f32,
                 max: MAX_WEIGHT as f32,
+                index: 1,
             },
         ];
         let population = self
@@ -83,7 +85,7 @@ impl Spea2Model for BasicModel {
     }
 
     fn get_mutation_operator(&mut self) -> MutationOperator {
-        let mut_op = move |model_item: &mut ModelItem| {
+        let mut_op = move |_: &[Objective], model_item: &mut ModelItem| {
             let item_index = model_item.custom_data_index.unwrap();
             let basic_item = self.items.get_mut(item_index).unwrap();
             basic_item.set_ratio(self.rnd.gen_range(0.0..1.0));
@@ -122,7 +124,7 @@ mod tests {
         let before = spea2_model.population[0].clone();
         let mut after = spea2_model.population[0].clone();
 
-        mut_op(&mut after);
+        mut_op(&spea2_model.objectives, &mut after);
 
         assert_ne!(before.values, after.values);
     }

@@ -1,1 +1,1 @@
-pub const MUTATION_RATE: f64 = 0.06;
+pub const MUTATION_RATE: f64 = 0.1;

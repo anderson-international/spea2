@@ -1,8 +1,15 @@
 use crate::model::{Distance, Model, ModelItem};
 
 pub fn apply_selection(model: &mut Model) {
-    let (dominated, mut non_dominated) = drain_model_by_dominance(model);
-    ensure_archive_size(dominated, &mut non_dominated, model.population_size);
+    let (mut dominated, mut non_dominated) = drain_model_by_dominance(model);
+
+    dominated.sort_by(|a, b| a.fitness.partial_cmp(&b.fitness).unwrap());
+    non_dominated.sort_by(|a, b| a.fitness.partial_cmp(&b.fitness).unwrap());
+
+    ensure_archive_size(&mut dominated, &mut non_dominated, model.population_size);
+
+    non_dominated.sort_by(|a, b| a.fitness.partial_cmp(&b.fitness).unwrap());
+
     model.archive = non_dominated;
 }
 
@@ -20,11 +27,12 @@ fn drain_model_by_dominance(model: &mut Model) -> (Vec<ModelItem>, Vec<ModelItem
                 dominated.push(item);
             }
         });
+
     (dominated, non_dominated)
 }
 
 fn ensure_archive_size(
-    mut dominated: Vec<ModelItem>,
+    dominated: &mut Vec<ModelItem>,
     non_dominated: &mut Vec<ModelItem>,
     archive_size: usize,
 ) -> Vec<Distance> {
@@ -35,7 +43,7 @@ fn ensure_archive_size(
         std::cmp::Ordering::Less => {
             dominated.sort_by(|a, b| a.fitness.partial_cmp(&b.fitness).unwrap());
             dominated.truncate(archive_size - nd_len);
-            non_dominated.extend(dominated);
+            non_dominated.append(dominated);
         }
         std::cmp::Ordering::Greater => {
             while non_dominated.len() > archive_size {
@@ -50,7 +58,7 @@ fn ensure_archive_size(
     distances
 }
 
-fn get_orderable_distances(dominated: &Vec<ModelItem>) -> Vec<Distance> {
+fn get_orderable_distances(dominated: &[ModelItem]) -> Vec<Distance> {
     let d_len = dominated.len();
     let mut distances: Vec<Distance> = vec![];
 
@@ -161,9 +169,9 @@ mod tests {
     }
 
     fn selection_ensure_archive_size(archive_max: usize) {
-        let dominated = mocks::get_dominated();
+        let mut dominated = mocks::get_dominated();
         let mut non_dominated = mocks::get_non_dominated();
-        ensure_archive_size(dominated, &mut non_dominated, archive_max);
+        ensure_archive_size(&mut dominated, &mut non_dominated, archive_max);
         assert_eq!(non_dominated.len(), archive_max);
     }
 
