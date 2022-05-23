@@ -1,15 +1,10 @@
-mod item;
-mod sack;
+use knapsack::model::Model;
+use spea2::{canvas::Canvas, EA};
 
-use sack::SackPool;
-use spea2::{canvas::Canvas, model::Spea2Model};
+mod knapsack;
 
 fn main() {
-    let mut sack_pool = SackPool::new();
-    sack_pool.fill();
-
-    let model = sack_pool.get_model();
-    let mutation = sack_pool.get_mutation_operator();
-
-    Canvas::new(model, mutation).show();
+    let mut model = Model::new();
+    let ea = EA::new(&mut model);
+    Canvas::new(ea, &model).show();
 }

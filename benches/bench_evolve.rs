@@ -1,13 +1,15 @@
 use criterion::{criterion_group, criterion_main, Criterion};
-use spea2::{mocks, model::Spea2Model};
+use spea2::{
+    mocks::{self, MockModel},
+    EA,
+};
 
 fn criterion_benchmark(c: &mut Criterion) {
     c.bench_function("spea2", |b| {
         b.iter(|| {
-            let spea2_model = &mut mocks::get_spea2model();
-            let mut model = spea2_model.get_model();
-            let mut mutation = spea2_model.get_mutation_operator();
-            spea2::evolve(&mut model, &mut mutation)
+            let mut model: MockModel = mocks::get_model();
+            let mut ea = EA::new(&mut model);
+            spea2::evolve(&mut ea, &model)
         })
     });
 }
