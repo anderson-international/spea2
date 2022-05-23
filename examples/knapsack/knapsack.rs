@@ -1,7 +1,7 @@
 mod pool {
     use super::item::Item;
-    
-    const SIZE: usize = 100;
+
+    pub const POOL_SIZE: usize = 10;
 
     #[derive(Clone)]
     pub struct Pool {
@@ -10,15 +10,24 @@ mod pool {
     impl Pool {
         pub fn new() -> Self {
             Self {
-                items: (0..SIZE).map(|i| Item::new(i.to_string())).collect(),
+                items: (0..POOL_SIZE).map(|i| Item::new(i.to_string())).collect(),
             }
+        }
+    }
+    #[cfg(test)]
+    mod tests {
+        use super::*;
+        #[test]
+        fn knapsack_pool_new() {
+            let pool = Pool::new();
+            assert!(pool.items.len() == POOL_SIZE);
         }
     }
 }
 mod sack {
     use super::{item::Item, pool::Pool};
     use rand::{prelude::SliceRandom, thread_rng};
-    const WEIGHT_MAX: usize = 100;
+    pub const SACK_WEIGHT_MAX: usize = 100;
     pub struct Sack {
         items: Vec<Item>,
     }
@@ -30,7 +39,7 @@ mod sack {
             let mut weight = 0;
             for item in items {
                 let item_weight = item.get_weight();
-                if weight + item_weight > WEIGHT_MAX {
+                if weight + item_weight > SACK_WEIGHT_MAX {
                     continue;
                 }
                 weight += item_weight;
@@ -92,6 +101,18 @@ mod item {
             self.key.clone()
         }
     }
+
+    #[cfg(test)]
+    mod tests {
+        use super::*;
+        #[test]
+        fn knapsack_item_new() {
+            let item = Item::new("test_key".to_string());
+            assert_eq!(item.get_key(), "test_key".to_string());
+            assert!((WEIGHT_MIN..WEIGHT_MAX).contains(&item.get_weight()));
+            assert!((VALUE_MIN..VALUE_MAX).contains(&item.get_value()));
+        }
+    }
 }
 
 pub mod model {
@@ -119,7 +140,10 @@ pub mod model {
     impl spea2::Model for Model {
         fn get_model_item(&mut self) -> spea2::ModelItem {
             let sack = Sack::new(&mut self.pool);
-            let model_item = spea2::ModelItem::new(vec![sack.get_weight() as f32, sack.get_value() as f32], sack.get_key());
+            let model_item = spea2::ModelItem::new(
+                vec![sack.get_weight() as f32, sack.get_value() as f32],
+                sack.get_key(),
+            );
             self.sacks.insert(sack.get_key(), sack);
             model_item
         }
@@ -149,6 +173,24 @@ pub mod model {
 
         fn crossover(&mut self, a: &mut spea2::ModelItem, b: &mut spea2::ModelItem) {
             // unimplemented!()
+        }
+    }
+
+    #[cfg(test)]
+    mod tests {
+        use crate::knapsack::sack;
+        use spea2::Model;
+
+        use super::*;
+
+        #[test]
+        fn model_get_model_item() {
+            let mut model = super::Model::new();
+            let model_item = model.get_model_item();
+
+            assert_eq!(model_item.values.len(), 2);
+            assert!(model_item.values[0] <= sack::SACK_WEIGHT_MAX as f32);
+            assert!(model.sacks.contains_key(&model_item.key));
         }
     }
 }
