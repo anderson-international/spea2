@@ -28,6 +28,8 @@ mod sack {
     use super::{item::Item, pool::Pool};
     use rand::{prelude::SliceRandom, thread_rng};
     pub const SACK_WEIGHT_MAX: usize = 100;
+
+    #[derive(Default)]
     pub struct Sack {
         items: Vec<Item>,
     }
@@ -57,14 +59,38 @@ mod sack {
             self.items.iter().map(|item| item.get_value()).sum()
         }
         pub fn get_key(&self) -> String {
-            let mut key = self
-                .items
+            self.items
                 .iter()
                 .map(|item| item.get_key())
                 .collect::<Vec<String>>()
-                .join("-");
-            key.pop();
-            key
+                .join(":")
+        }
+    }
+
+    #[cfg(test)]
+    mod tests {
+        use super::*;
+
+        #[test]
+        fn knapsack_sack_get_key() {
+            let mut sack = Sack::default();
+            (0..5).for_each(|i| sack.add_item(Item::new(i.to_string())));
+            assert_eq!(sack.get_key(), "0:1:2:3:4");
+        }
+        #[test]
+        fn knapsack_sack_get_weight() {
+            let mut sack = Sack::default();
+            const ITEM_COUNT:usize = 5;
+            
+            (0..ITEM_COUNT).for_each(|i| {
+                let mut item = Item::new(i.to_string());
+                item.set_value(ITEM_COUNT-(i+1));
+                item.set_weight(i);
+                sack.add_item(item);
+            });
+            let total = (0..ITEM_COUNT).sum();
+            assert_eq!(sack.get_weight(), total);
+            assert_eq!(sack.get_value(), total);
         }
     }
 }
@@ -99,6 +125,13 @@ mod item {
         }
         pub fn get_key(&self) -> String {
             self.key.clone()
+        }
+
+        pub fn set_weight(&mut self, weight: usize) {
+            self.weight = weight;
+        }
+        pub fn set_value(&mut self, value: usize) {
+            self.value = value;
         }
     }
 
@@ -155,14 +188,14 @@ pub mod model {
                     name: "wieght".to_string(),
                     min: item::WEIGHT_MIN as f32,
                     max: item::WEIGHT_MAX as f32,
-                    direction: spea2::Direction::Maximised,
+                    direction: spea2::Direction::Minimised,
                 },
                 spea2::Objective {
                     index: 1,
                     name: "value".to_string(),
                     min: item::VALUE_MIN as f32,
                     max: item::VALUE_MAX as f32,
-                    direction: spea2::Direction::Minimised,
+                    direction: spea2::Direction::Maximised,
                 },
             ]
         }
@@ -181,16 +214,30 @@ pub mod model {
         use crate::knapsack::sack;
         use spea2::Model;
 
-        use super::*;
-
         #[test]
-        fn model_get_model_item() {
+        fn knapsack_model_get_model_item() {
             let mut model = super::Model::new();
             let model_item = model.get_model_item();
 
             assert_eq!(model_item.values.len(), 2);
             assert!(model_item.values[0] <= sack::SACK_WEIGHT_MAX as f32);
             assert!(model.sacks.contains_key(&model_item.key));
+        }
+
+        #[test]
+        fn knapsack_model_get_objectives() {
+            let model = super::Model::new();
+            let objectives = model.get_objectives();
+
+            assert_eq!(objectives.len(), 2);
+            assert!(matches!(
+                objectives[0].direction,
+                spea2::Direction::Minimised
+            ));
+            assert!(matches!(
+                objectives[1].direction,
+                spea2::Direction::Maximised
+            ));
         }
     }
 }
