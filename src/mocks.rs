@@ -123,7 +123,7 @@ impl Model for MockModel {
         )
     }
 
-    fn mutate(&self, item: &mut ModelItem) {
+    fn mutate(&mut self, item: &mut ModelItem) {
         todo!()
     }
 

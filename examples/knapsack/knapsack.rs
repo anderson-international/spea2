@@ -24,76 +24,6 @@ mod pool {
         }
     }
 }
-mod sack {
-    use super::{item::Item, pool::Pool};
-    use rand::{prelude::SliceRandom, thread_rng};
-    pub const SACK_WEIGHT_MAX: usize = 100;
-
-    #[derive(Default)]
-    pub struct Sack {
-        items: Vec<Item>,
-    }
-    impl Sack {
-        pub fn new(pool: &mut Pool) -> Self {
-            let mut sack = Sack { items: Vec::new() };
-            let mut items = pool.items.clone();
-            items.shuffle(&mut thread_rng());
-            let mut weight = 0;
-            for item in items {
-                let item_weight = item.get_weight();
-                if weight + item_weight > SACK_WEIGHT_MAX {
-                    continue;
-                }
-                weight += item_weight;
-                sack.add_item(item);
-            }
-            sack
-        }
-        pub fn add_item(&mut self, item: Item) {
-            self.items.push(item);
-        }
-        pub fn get_weight(&self) -> usize {
-            self.items.iter().map(|item| item.get_weight()).sum()
-        }
-        pub fn get_value(&self) -> usize {
-            self.items.iter().map(|item| item.get_value()).sum()
-        }
-        pub fn get_key(&self) -> String {
-            self.items
-                .iter()
-                .map(|item| item.get_key())
-                .collect::<Vec<String>>()
-                .join(":")
-        }
-    }
-
-    #[cfg(test)]
-    mod tests {
-        use super::*;
-
-        #[test]
-        fn knapsack_sack_get_key() {
-            let mut sack = Sack::default();
-            (0..5).for_each(|i| sack.add_item(Item::new(i.to_string())));
-            assert_eq!(sack.get_key(), "0:1:2:3:4");
-        }
-        #[test]
-        fn knapsack_sack_get_weight() {
-            let mut sack = Sack::default();
-            const ITEM_COUNT:usize = 5;
-            
-            (0..ITEM_COUNT).for_each(|i| {
-                let mut item = Item::new(i.to_string());
-                item.set_value(ITEM_COUNT-(i+1));
-                item.set_weight(i);
-                sack.add_item(item);
-            });
-            let total = (0..ITEM_COUNT).sum();
-            assert_eq!(sack.get_weight(), total);
-            assert_eq!(sack.get_value(), total);
-        }
-    }
-}
 
 mod item {
     use rand::Rng;
@@ -126,7 +56,9 @@ mod item {
         pub fn get_key(&self) -> String {
             self.key.clone()
         }
-
+        pub fn set_key(&mut self, key: String) {
+            self.key = key;
+        }
         pub fn set_weight(&mut self, weight: usize) {
             self.weight = weight;
         }
@@ -147,8 +79,101 @@ mod item {
         }
     }
 }
+mod sack {
+    use std::collections::HashMap;
+
+    use super::{item::Item, pool::Pool};
+    use rand::{prelude::SliceRandom, thread_rng};
+    pub const SACK_WEIGHT_MAX: usize = 100;
+
+    #[derive(Default)]
+    pub struct Sack {
+        items: HashMap<String, Item>,
+    }
+    impl Sack {
+        pub fn new(pool: &mut Pool) -> Self {
+            let mut sack = Sack {
+                items: HashMap::new(),
+            };
+            sack.fill(pool);
+            sack
+        }
+        pub fn fill(&mut self, pool: &mut Pool) {
+            let mut items = pool.items.clone();
+            items.shuffle(&mut thread_rng());
+            let mut weight = self.get_weight();
+            for item in items {
+                let item_weight = item.get_weight();
+                if weight + item_weight > SACK_WEIGHT_MAX {
+                    continue;
+                }
+                weight += item_weight;
+                self.add_item(item);
+            }
+        }
+        pub fn add_item(&mut self, item: Item) {
+            self.items.insert(item.get_key(), item);
+        }
+        pub fn remove_item(&mut self, key: &str) {
+            self.items.remove(key);
+        }
+        pub fn get_weight(&self) -> usize {
+            self.items.iter().map(|(_, item)| item.get_weight()).sum()
+        }
+        pub fn get_value(&self) -> usize {
+            self.items.iter().map(|(_, item)| item.get_value()).sum()
+        }
+        pub fn get_key(&self) -> String {
+            self.items
+                .iter()
+                .map(|(key, _)| key.clone())
+                .collect::<Vec<String>>()
+                .join(":")
+        }
+        pub fn get_item_count(&self) -> usize {
+            self.items.len()
+        }
+    }
+
+    #[cfg(test)]
+    mod tests {
+        use super::*;
+
+        #[test]
+        fn knapsack_sack_new() {
+            let mut pool = Pool::new();
+            let sack = Sack::new(&mut pool);
+
+            assert!(sack.get_weight() <= SACK_WEIGHT_MAX);
+        }
+
+        #[test]
+        fn knapsack_sack_get_key() {
+            let mut sack = Sack::default();
+            (0..5).for_each(|i| sack.add_item(Item::new(i.to_string())));
+            assert_eq!(sack.get_key(), "0:1:2:3:4");
+        }
+        #[test]
+        fn knapsack_sack_get_weight() {
+            let mut sack = Sack::default();
+            const ITEM_COUNT: usize = 5;
+
+            (0..ITEM_COUNT).for_each(|i| {
+                let mut item = Item::new(i.to_string());
+                item.set_value(ITEM_COUNT - (i + 1));
+                item.set_weight(i);
+                sack.add_item(item);
+            });
+            let total = (0..ITEM_COUNT).sum();
+            assert_eq!(sack.get_weight(), total);
+            assert_eq!(sack.get_value(), total);
+        }
+    }
+}
 
 pub mod model {
+    use rand::{thread_rng, Rng};
+
     use super::{
         item::{self},
         pool::Pool,
@@ -200,8 +225,21 @@ pub mod model {
             ]
         }
 
-        fn mutate(&self, item: &mut spea2::ModelItem) {
-            // unimplemented!()
+        fn mutate(&mut self, item: &mut spea2::ModelItem) {
+            let (key, mut sack) = self.sacks.remove_entry(&item.key).unwrap();
+            loop {
+                let key = thread_rng().gen_range(0..sack.get_item_count()).to_string();
+                let item = sack.remove_item(&key);
+                sack.fill(&mut self.pool);
+                if key != sack.get_key() {
+                    break;
+                }
+            }
+            let key = sack.get_key();
+            item.values[0] = sack.get_weight() as f32;
+            item.values[1] = sack.get_value() as f32;
+            item.key = key.clone();
+            self.sacks.insert(key, sack);
         }
 
         fn crossover(&mut self, a: &mut spea2::ModelItem, b: &mut spea2::ModelItem) {
@@ -211,7 +249,7 @@ pub mod model {
 
     #[cfg(test)]
     mod tests {
-        use crate::knapsack::sack;
+        use crate::knapsack::sack::{self, SACK_WEIGHT_MAX};
         use spea2::Model;
 
         #[test]
@@ -238,6 +276,44 @@ pub mod model {
                 objectives[1].direction,
                 spea2::Direction::Maximised
             ));
+        }
+        #[test]
+        fn knapsack_model_mutate() {
+            let mut model = super::Model::new();
+            let mut model_item = model.get_model_item();
+
+            let sack_count_before = model.sacks.len();
+            let key_before = model_item.key.clone();
+            let weight_before = model_item.values[0];
+            let value_before = model_item.values[1];
+
+            model.mutate(&mut model_item);
+
+            let sack_count_after = model.sacks.len();
+            let key_after = model_item.key.clone();
+            let weight_after = model_item.values[0];
+            let value_after = model_item.values[1];
+
+            println!("SACK_WEIGHT_MAX: {}", SACK_WEIGHT_MAX);
+            println!(
+                "Before [w: {} v: {}] -  k: {} ",
+                weight_before, value_before, key_before
+            );
+            println!(
+                "After [w: {} v: {}] -  k: {} ",
+                weight_after, value_after, key_after
+            );
+
+            assert_eq!(sack_count_before, sack_count_after);
+            assert_ne!(key_before, key_after);
+
+            assert!(!model.sacks.contains_key(&key_before));
+            assert!(model.sacks.contains_key(&key_after));
+            assert!(weight_after <= SACK_WEIGHT_MAX as f32);
+
+            let indices: Vec<&str> = "6:4:1:2:3".split(':').collect();
+            println!("{:?}", indices);
+            println!("{:?}", indices.contains(&"6"));
         }
     }
 }

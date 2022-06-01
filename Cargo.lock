@@ -1863,6 +1863,7 @@ version = "0.1.0"
 dependencies = [
  "criterion",
  "itermore",
+ "itertools",
  "lazy_static",
  "piston",
  "piston2d-graphics",

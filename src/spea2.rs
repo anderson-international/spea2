@@ -19,7 +19,7 @@ pub fn evolve(ea: &mut EA, model: &dyn Model) {
 pub trait Model {
     fn get_model_item(&mut self) -> ModelItem;
     fn get_objectives(&self) -> Vec<Objective>;
-    fn mutate(&self, item: &mut ModelItem);
+    fn mutate(&mut self, item: &mut ModelItem);
     fn crossover(&mut self, a: &mut ModelItem, b: &mut ModelItem);
 }
 
